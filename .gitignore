@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-ui\node_modules
+ui/node_modules
 /.pnp
 .pnp.js
 
@@ -178,5 +178,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-ui/node_modules/*.* 

@@ -1,0 +1,186 @@
+.App {
+	height: 100%;
+	min-height: 100%;
+	background-color: #eee;
+	padding: 10px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+main {
+	display: grid;
+	grid-template-columns: 75% 25%;
+	grid-template-rows: 70px 60px auto;
+	column-gap: 10px;
+	height: 100%;
+	max-height: 646px;
+	width: 100%;
+	max-width: 1366px;
+	background-color: #fff;
+	padding: 10px;
+	border-radius: 10px;
+}
+
+.mode {
+	grid-column: 1/2;
+	grid-row: 1/2;
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+}
+
+h1 {
+	grid-column: 1/2;
+	grid-row: 2/3;
+	font-family: 'Andika New Basic', sans-serif;
+	text-transform: uppercase;
+	color: #fff;
+	display: flex;
+	align-items: center;
+	padding: 0 20px;
+}
+
+h1 svg {
+	margin-right: 10px;
+}
+
+.create-ticket-lotto {
+	background-color: #260085;
+	
+}
+
+.View-Results-lotto {
+	background-color: #209869;}
+
+.About-lotto {
+	background-color: #930089;
+}
+
+.Connect-lotto {
+	background-color: #f78100;
+}
+
+.card {
+	grid-column: 1/2;
+	grid-row: 3/4;
+	display: flex;
+	flex-direction: column;
+}
+
+.game-card {
+	display: grid;
+	grid-template-columns: repeat(10, 1fr);
+	gap: 10px;
+	background-color: #d7edff;
+	flex: 1;
+	align-items: center;
+	padding: 10px;
+}
+
+.About-card {
+	grid-template-columns: repeat(5, 1fr);
+}
+
+.card-number {
+	border: 1px solid rgb(20, 20, 20);
+	color: rgb(20, 20, 20);
+	border-radius: 5px;
+	cursor: pointer;
+	max-height: 50px;
+	height: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.number-selected {
+	color: #fff;
+}
+
+.results {
+	grid-column: 2/3;
+	grid-row: 1/-1;
+	overflow: auto;
+}
+
+.numbers-area {
+	display: grid;
+	grid-template-columns: repeat(6, 1fr);
+	row-gap: 10px;
+	column-gap: 5px;
+}
+
+.numbers-area > div {
+	background-color: #e0f1ff;
+	border-radius: 50%;
+	height: 40px;
+	width: 40px;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	position: relative;
+	cursor: default;
+}
+
+#ticketNumbers, #results {
+	height: 200px;
+}
+
+#ticketNumbers > div > div {
+	position: absolute;
+	cursor: pointer;
+	top: -4px;
+	right: -2px;
+	border: 1px solid tomato;
+	border-radius: 50%;
+	width: 14px;
+	height: 14px;
+	background-color: #fff;
+	display: none;
+}
+
+#ticketNumbers > div:hover > div {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+#buttons-wrapper {
+	display: flex;
+	justify-content: space-around;
+}
+
+@media screen and (max-width: 767px) {
+	.App {
+		height: auto;
+		align-items: unset;
+	}
+
+	main {
+		grid-template-columns: 1fr;
+		grid-template-rows: auto auto 1fr auto;
+		max-width: 100%;
+		max-height: 100%;
+		min-height: 100%;
+		height: auto;
+	}
+
+	.mode {
+		flex-wrap: wrap;
+	}
+
+	.game-card {
+		grid-template-columns: repeat(5, 1fr);
+	}
+
+	.card-number {
+		height: 50px;
+	}
+
+	.results {
+		grid-column: 1/2;
+		grid-row: 4/5;
+		overflow: initial;
+	}
+}
