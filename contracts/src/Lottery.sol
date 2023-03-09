@@ -39,7 +39,7 @@ contract Lottery {
     mapping(uint256 gameId => bytes32 gameData) public games;
 
     // Number of Games - Slot 0x2
-    uint256 public gameId = 1;
+    uint256 public gameId = 0x1; // initialise
 
     // min blocks before a draw can be set. - Slot 0x3
     uint256 constant TS_OFFSET = 100;
