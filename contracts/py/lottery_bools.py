@@ -1,15 +1,16 @@
 from base import base, add_flag_to_position, check_num_flags
 import random
 
+
 status = base
-winningNumbers = [1, 4, 6, 33, 44, 63]
+winningNumbers = [1, 4, 6, 33, 44, 49]
 for i in winningNumbers:
     status = add_flag_to_position(status, i)
     # status = add_flag_to_position(status, i) # 2 x to check that it does the _exists check..
 
 
 print(hex(status))
-check = 0xFF00F0F00000000000000000000000000F0000000000F000000000000000000F
+check = 0xff00f0f00000000000000000000000000f0000000000f0000f00000000000000
 c = check_num_flags(check, 6, status)
 print(c)
 
@@ -83,3 +84,50 @@ singleNum = singleNum % 49
 print(hex(singleNum), singleNum)
 
 print(1234121 & 0)
+
+print(status)
+print(hex(status))
+
+from datetime import datetime 
+
+# map
+# 0 = Stop bit (base) - beginning of every word
+# 1-49 = Numbers
+# 50-60 = timestamp
+# 61-64 = id
+        #    0xf0000000000000000000000000000000000000000000000000006408ec210000
+
+check =    0xff00f0f00000000000000000000000000f0000000000f0000f00000000000000
+
+base =     0xF000000000000000000000000000000000000000000000000000000000000000
+# Draw Date
+date_pos = 0x00000000000000000000000000000000000000000000000000FFFFFFFFFF0000
+         # 0xf00000000000000000000000000000000000000000000000000019023a460000
+# Draw Id
+id_mask  = 0x000000000000000000000000000000000000000000000000000000000000FFFF
+           
+
+def addTimestamp(state: int) -> int:
+    ts = int(datetime.now().timestamp())
+    print(int(ts))
+
+    return (ts << 0x10) ^ state # << 16
+
+def addId(state:int) -> int:
+    _id = random.randint(1,0xffff) # 65535 ids!
+    # No shift required, these are the least significant bits.
+    return _id ^ state
+
+ts_added = addTimestamp(base)
+id_added = addId(ts_added)
+nums_added = 0xff00f0f00000000000000000000000000f0000000000f0000f00000000000000 | id_added
+
+
+print(hex(ts_added))
+print(hex(id_added))
+print(hex(nums_added))
+
+print((), 0x1f  << 0x9f)
+
+print(hex(96))
+print(hex((0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2 << 0x60 ) ^ 1))
