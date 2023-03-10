@@ -154,10 +154,9 @@ contract Lottery {
         // 44986 / 7986 GAS.
         // Hash Key (player) and slot (0)
         assembly {
-            // add id to player
+            // shift address and add the game id to player 'key'
             let shifted := shl(0x60, player)
             let state := xor(shifted, _gameId)
-            res := state
             // Store player in memory scratch space.
             mstore(0x0, state)
             // Store slot number in scratch space after player.
@@ -173,12 +172,19 @@ contract Lottery {
     /// @notice checks a ticket against the winning numbers
     /// @dev uses 'and' to compare the players bytes to the winning numbers bytes.
     ///      reverts on 0 state.
-    /// @param player account to chcek the ticket for.
+    /// @param player account to check the ticket for.
     /// @return result of the player if they have won or not.
-    function checkWinner(bytes32 player) public view returns (bool result) {
-        bytes32 _playerTickets = keccak256(abi.encode(player, 0x0)); //slot 0
+    function checkWinner(bytes32 player, uint32 _gameId) public view returns (bool result) {
         assembly {
-            let state := sload(_playerTickets)
+            assembly {
+            
+            // add id to player
+            let shifted := shl(0x60, player)
+            let playerKey := xor(shifted, _gameId)
+                        
+            // Create hash from player and slot - load player ticket
+            let state := and(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000, sload(keccak256(playerKey, 0x0)))
+
             // check the state for 0 as we load this anyway
             // We dont check winning numbers as even if it is zero,
             // a non zero state will not return  0 when anded
@@ -188,7 +194,7 @@ contract Lottery {
             // Use 'and' to check the state against the winning numbers.
             // any matching bits will create a new 32 byte word with only matching
             // positions (or 0 if there are no matches).
-            let anded := and(sload(winningTicket.slot), state)
+            let anded := and(sload(keccak256(_gameId, 0x1)), state)
 
             // Compare anded to our players numbers state.
             // If they are an exact match, the result will be true and thus a winner.
