@@ -210,7 +210,7 @@ contract Lottery {
     /// Example - 0xFF00F0F00000000000000000000000000F0000000000F000000000000000000F
     // 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
     // 0x10000000000000000000000000000000000000000
-    function addPlayerTickets(address player, bytes32 ticketBytes, uint256 _gameId) public {
+    function addPlayerTickets(address player, bytes32 ticketBytes, uint256 _gameId) public returns (bytes32 result) {
         // 45162 / 8162 GAS - Normal Solidity..
 
         // Very small gas advantage here using assembly..
@@ -220,10 +220,8 @@ contract Lottery {
         // Hash Key (player) and slot (0)
         assembly {
             // shift address and add the game id to player 'key'
-            let shifted := shl(0x60, player)
-            let state := xor(shifted, _gameId)
             // Store player in memory scratch space.
-            mstore(0x0, state)
+            mstore(0x0, xor(shl(0x60, player), _gameId))
             // Store slot number in scratch space after player.
             mstore(0x20, playerTickets.slot)
             // Create hash from player and slot
@@ -231,6 +229,20 @@ contract Lottery {
 
             // Store new ticket for the player.
             sstore(hash, ticketBytes)
+
+            // Store player in memory scratch space.
+            mstore(0x0, xor(ticketBytes, _gameId))
+
+            // Store slot number in scratch space after id.
+            mstore(0x20, ticketsInPlay.slot)
+            // Create hash from gameId and slot
+            let ticketHash := keccak256(0x0, 0x40)
+
+            let newAmount := add(sload(ticketHash), 1)
+            // Store new ticket for the player.
+            sstore(ticketHash, newAmount)
+
+            result := xor(ticketBytes, _gameId)
         }
     }
 

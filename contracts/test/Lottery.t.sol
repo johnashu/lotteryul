@@ -27,17 +27,21 @@ contract LotteryTest is Test {
         lottery.gameId();
         lottery.addGame(blockNumber + lottery.TS_OFFSET());
         lottery.drawResultNumbers(1);
+
         vm.prank(address(0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2));
         vm.roll(blockNumber + lottery.TS_OFFSET() + lottery.TS_OFFSET());
-        lottery.addwinningTicket(1);
-        bytes32 nums = lottery.drawResultNumbers(1);
-        lottery.drawResultFull(1);
 
         lottery.addPlayerTickets(winner, drawResult, 1);
         lottery.playerNumbers(winner, 1);
 
+        lottery.addwinningTicket(1);
+        lottery.ticketsInPlay(0xf00ff0000ff00000000000000000000f000000000000f0000000000000000001);
+        bytes32 nums = lottery.drawResultNumbers(1);
+        lottery.drawResultFull(1);
+
         lottery.checkWinner(winner, 1);
         assertEq(lottery.playerNumbers(winner, 1), nums);
+        assertEq(lottery.ticketsInPlay(0xf00ff0000ff00000000000000000000f000000000000f0000000000000000001), 1);
 
         lottery.addPlayerTickets(loser, losingTicket, 1);
         lottery.playerNumbers(loser, 1);
@@ -49,6 +53,7 @@ contract LotteryTest is Test {
         lottery.addPlayerTickets(loser, allOff, 1);
         vm.expectRevert();
         lottery.checkWinner(loser, 1);
+        lottery.gameId();
     }
 
     function testAddGame(uint256 x) public {
@@ -60,6 +65,7 @@ contract LotteryTest is Test {
             lottery.drawResultFull(i);
         }
     }
+
     function testFailDrawDateHasNotPassed() public {
         vm.roll(109);
         lottery.gameId();
