@@ -131,5 +131,5 @@ print(hex(nums_added))
 
 print((), 0x1f  << 0x9f)
 
-print(hex(96))
+print(hex(56))
 print(hex((0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2 << 0x60 ) ^ 1))

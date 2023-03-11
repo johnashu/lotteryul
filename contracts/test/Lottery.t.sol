@@ -10,13 +10,13 @@ contract LotteryTest is Test {
     address winner = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2; // makeAddr("winnerUser");
     bytes32 winnerHash = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2000000000000000000000001;
     bytes32 loserHash = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2000000000000000000000001;
-    bytes32 losingTicket = 0xF000F0F0000000000FF0000000000000000000000000F000000000000000000F;
-    bytes32 winningTicket = 0xff00f0f00000000000000000000000000f0000000000f0000f00000000000000;
+    bytes32 losingTicket = 0xf0000000fff000000ff000000000000000000000000000000f00000000000000;
+    bytes32 drawResult = 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000000;
     bytes32 allOn = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
     bytes32 allOff = 0x0;
 
     uint40 maxTs = 1099511627775;
-    uint40 blockNumber = 10_000_000;
+    uint40 blockNumber = 10_000_123;
 
     function setUp() public {
         lottery = new Lottery();
@@ -24,33 +24,37 @@ contract LotteryTest is Test {
 
     function testLottery(uint256 x) public {
         vm.roll(109);
+        lottery.gameId();
+        lottery.addGame(blockNumber++);
+        lottery.drawResultNumbers(1);
         vm.prank(address(0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2));
-        lottery.addwinningTicketUint();
-        bytes32 nums = lottery.winningTicket();
+        lottery.addwinningTicket(1);
+        bytes32 nums = lottery.drawResultNumbers(1);
+        lottery.drawResultFull(1);
 
-        lottery.addPlayerTickets(winner, winningTicket, 1);
+        lottery.addPlayerTickets(winner, drawResult, 1);
         lottery.playerTickets(winnerHash);
 
-        lottery.checkWinner(winnerHash);
-        assertEq(lottery.playerTickets(winningTicket), nums);
+        lottery.checkWinner(winner, 1);
+        assertEq(lottery.playerTickets(winnerHash), nums);
 
         lottery.addPlayerTickets(loser, losingTicket, 1);
-        lottery.playerTickets(losingTicket);
-        lottery.checkWinner(loserHash);
+        lottery.playerTickets(loserHash);
+        lottery.checkWinner(loser, 1);
 
         lottery.addPlayerTickets(loser, allOn, 1);
-        lottery.checkWinner(loserHash);
+        lottery.checkWinner(loser, 1);
 
         lottery.addPlayerTickets(loser, allOff, 1);
         vm.expectRevert();
-        lottery.checkWinner(loserHash);
+        lottery.checkWinner(loser, 1);
     }
 
     function testAddGame(uint256 x) public {
-        for (uint256 i = 1; i < 10; i++) {
+        for (uint32 i = 1; i < 10; i++) {
             lottery.gameId();
             lottery.addGame(blockNumber++);
-            lottery.games(i);
+            lottery.drawResultNumbers(i);
         }
     }
 

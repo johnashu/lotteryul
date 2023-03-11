@@ -14,7 +14,7 @@ pragma solidity 0.8.18;
 // - example: 0xFF00F0F00000000000000000000000000F0000000000F000000000000000000F
 // Use a starting mask ( `0xf << 0xfc`) - This will save us GAS as we don't need to execute the shift operation or initialise from 0.
 // Pay 1 time on Deployment.  Then update costs only
-// bytes32 public winningTicket = 0xF000000000000000000000000000000000000000000000000000000000000000;
+// bytes32 public drawResult = 0xF000000000000000000000000000000000000000000000000000000000000000;
 
 contract Lottery {
     // Slot 0x0
@@ -36,7 +36,7 @@ contract Lottery {
     //  61-64 = number of winners
 
     // 0xf | f00f0f00000000000000000000000000f0000000000f0000f | 006408f4f | f8401
-    mapping(uint256 gameId => bytes32 gameData) public games;
+    mapping(uint256 gameId => bytes32 gameData) private games;
 
     // Number of Games - Slot 0x2
     uint256 public gameId = 0x1; // initialise
@@ -51,6 +51,28 @@ contract Lottery {
 
     error DrawCanOnlyBeInTheFuture();
 
+    function drawResultNumbers(uint32 _gameId) public view returns (bytes32 result) {
+        assembly {
+            // Store gameId in memory scratch space.
+            mstore(0x0, _gameId)
+            // Store slot number in scratch space after id.
+            mstore(0x20, games.slot)
+            // Create hash from gameId and slot
+            result := and(sload(keccak256(0x0, 0x40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000)
+        }
+    }
+
+    function drawResultFull(uint32 _gameId) public view returns (bytes32 result) {
+        assembly {
+            // Store gameId in memory scratch space.
+            mstore(0x0, _gameId)
+            // Store slot number in scratch space after id.
+            mstore(0x20, games.slot)
+            // Create hash from gameId and slot
+            result := sload(keccak256(0x0, 0x40))
+        }
+    }
+
     function addGame(uint40 drawDate) public {
         if (drawDate < block.number + TS_OFFSET) _revert(DrawCanOnlyBeInTheFuture.selector);
 
@@ -61,8 +83,7 @@ contract Lottery {
             sstore(gameId.slot, add(_gameId, 1))
 
             // add id and timestamp
-            let state :=
-                or(_gameId, xor(shl(16, drawDate), 0xF000000000000000000000000000000000000000000000000000000000000000))
+            let state := xor(shl(16, drawDate), 0xF000000000000000000000000000000000000000000000000000000000000000)
             // Store id in memory scratch space.
             mstore(0x0, _gameId)
 
@@ -74,28 +95,21 @@ contract Lottery {
         }
     }
 
-    bytes32 public winningTicket = 0xF000000000000000000000000000000000000000000000000000000000000000;
-
     /// @dev PlaceHolder to create a bitmask of numbers to bytes32 word.
     /// Should come from a trusted VRF source such as onChain or chainlink (Oracle)
     /// Checks each position 1-49 to ensure that 6 unique positions exist.
     /// Here is where we do the check for '6 numbers'.  It means we only execute it 1 time.
     /// Because we are creating a bitmask, any winning tickets have to match EXACTLY with the positions on the mask.
-    function addwinningTicketUint() public {
+    function addwinningTicket(uint32 _gameId) public returns (bytes32 res) {
         // Mock value but should be a 32 byte VRF from a trusted source on chain or oracle.
         uint256 randomNumber = 73333815688330388439497394924671604269744030172485877353949151816386893917160;
         assembly {
-            // load base mask from storage.
-            // This can also be hardcoded to save further gas if required.
-            // 0xF000000000000000000000000000000000000000000000000000000000000000
-            // let _base := sload(base.slot)
 
             // Random number selector mask.
             let randomMask := 0x00000000000000000000000000000000000000000000000000000000000000FF
 
             // Load current state, starting the same as `_base` 0xF000...0000
-            let state := 0xF000000000000000000000000000000000000000000000000000000000000000
-
+            let state
             let counter
 
             // Should not reach the max 64 unless we have a random number
@@ -114,6 +128,7 @@ contract Lottery {
                 let pos := add(mod(randomShift, 48), 1)
 
                 // Shift the 'on' bits (F) to the correct position using the 'base' mask
+                // The first will be our stop bit 'F' at position '0'
                 let shifted := shr(mul(pos, 4), 0xF000000000000000000000000000000000000000000000000000000000000000)
 
                 // XOR to create a new state with the new position added.
@@ -131,8 +146,20 @@ contract Lottery {
                     if eq(6, counter) { break }
                 }
             }
+
+            // Store gameId in memory scratch space.
+            mstore(0x0, _gameId)
+            // Store slot number in scratch space after id.
+            mstore(0x20, games.slot)
+            // Create hash from gameId and slot
+            let gameHash := keccak256(0x0, 0x40)
+
+            let updatedTicket := xor(sload(gameHash), state)
+
+            res := updatedTicket
+
             // save state to storage.
-            sstore(winningTicket.slot, state)
+            sstore(gameHash, updatedTicket)
 
             // 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000000
         }
@@ -140,12 +167,12 @@ contract Lottery {
 
     /// @dev adds a bytes string of number locations 1-49.. .
     /// We dont check the numbers here, we want 6 and indeed, more than 6 can be passed.
-    /// but only an Exact match of the numbers will return true using the winningTicket Mask.
+    /// but only an Exact match of the numbers will return true using the drawResult Mask.
     /// @param ticketBytes bytes with selected number position as 'F'
     /// Example - 0xFF00F0F00000000000000000000000000F0000000000F000000000000000000F
     // 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
     // 0x10000000000000000000000000000000000000000
-    function addPlayerTickets(address player, bytes32 ticketBytes, uint256 _gameId) public returns (bytes32 res) {
+    function addPlayerTickets(address player, bytes32 ticketBytes, uint256 _gameId) public {
         // 45162 / 8162 GAS - Normal Solidity..
 
         // Very small gas advantage here using assembly..
@@ -174,31 +201,49 @@ contract Lottery {
     ///      reverts on 0 state.
     /// @param player account to check the ticket for.
     /// @return result of the player if they have won or not.
-    function checkWinner(bytes32 player, uint32 _gameId) public view returns (bool result) {
+    function checkWinner(address player, uint32 _gameId) public view returns (bool result) {
         assembly {
-            assembly {
-            
-            // add id to player
+            // shift address and add the game id to player 'key'
             let shifted := shl(0x60, player)
             let playerKey := xor(shifted, _gameId)
-                        
-            // Create hash from player and slot - load player ticket
-            let state := and(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000, sload(keccak256(playerKey, 0x0)))
+            // Store player in memory scratch space.
+            mstore(0x0, playerKey)
+            // Store slot number in scratch space after player.
+            mstore(0x20, playerTickets.slot)
+            // Create hash from player and slot
+            let playerTicketHash := keccak256(0x0, 0x40)
 
-            // check the state for 0 as we load this anyway
-            // We dont check winning numbers as even if it is zero,
-            // a non zero state will not return  0 when anded
-            // if the state is zero then anded will ALWAYS be true.
-            if eq(state, 0) { revert(0, 0) }
+            // // Create hash from player and slot - load player ticket
+            let playerTicketState :=
+                and(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000, sload(playerTicketHash))
 
-            // Use 'and' to check the state against the winning numbers.
-            // any matching bits will create a new 32 byte word with only matching
-            // positions (or 0 if there are no matches).
-            let anded := and(sload(keccak256(_gameId, 0x1)), state)
+            // // check the state for 0 as we load this anyway
+            // // We dont check winning numbers as even if it is zero,
+            // // a non zero state will not return  0 when anded
+            // // if the state is zero then anded will ALWAYS be true.
+            if eq(playerTicketState, 0) { revert(0, 0) }
 
-            // Compare anded to our players numbers state.
-            // If they are an exact match, the result will be true and thus a winner.
-            result := eq(anded, state)
+            // Store gameId in memory scratch space.
+            mstore(0x0, _gameId)
+            // Store slot number in scratch space after id.
+            mstore(0x20, games.slot)
+            // Create hash from gameId and slot
+            let gameHash := keccak256(0x0, 0x40)
+
+            // // Use 'and' to check the state against the winning numbers.
+            // // any matching bits will create a new 32 byte word with only matching
+            // // positions (or 0 if there are no matches).
+            let anded :=
+                and(
+                    and(sload(gameHash), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000),
+                    playerTicketState
+                )
+
+            // result := anded
+
+            // // Compare anded to our players numbers state.
+            // // If they are an exact match, the result will be true and thus a winner.
+            result := eq(anded, playerTicketState)
         }
     }
 
