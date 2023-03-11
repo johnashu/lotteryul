@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { GiClover } from 'react-icons/gi'
 import { FiX, FiRefreshCw, FiPlayCircle } from 'react-icons/fi'
 
+import MetaMaskConnect from './components/MM/MetaMaskConnect';
 import Button from './components/Button'
 import NumbersArea from './components/NumbersArea'
 
 import './App.css'
 
-function App () {
+function App() {
   const [nums, setNums] = useState([])
   const [ticketNumber, setticketNumber] = useState([])
   const [mode, setMode] = useState('create-ticket')
@@ -80,9 +81,11 @@ function App () {
     setMatches([])
   }
 
+
+
   return (
     <div className='App'>
-      <main>
+ 
         <section className='mode'>
           <Button
             className='mode-button create-ticket-lotto'
@@ -105,45 +108,33 @@ function App () {
             <GiClover />
             About Lotto
           </Button>
-          <Button
-            className='mode-button Connect-lotto'
-            onClick={() => setMode('Connect')}
-          >
-            <GiClover />
-            Connect Wallet
-          </Button>
+
+            <MetaMaskConnect />
+ 
+          
         </section>
-
-        <h1 className={mode ? `${mode}-lotto` : ''}>
-          <GiClover /> {mode} -{' '}
-          {window.ethereum && walletConnected
-            ? window.ethereum
-                .request({ method: 'eth_requestAccounts' })
-                .then(res => {
-                  // Return the address of the wallet
-                  console.log(res)
-                })
-            : 'Not Connected'}
-        </h1>
-
+        
+    
+      <main>
+          <h1 className={mode ? `${mode}-lotto` : ''}> <GiClover /> {mode}</h1>
+  
         <section className='card'>
           {mode == 'create-ticket' || !mode
             ? ((
-                <p>
-                  Select <strong>{maxNum}</strong> numbers from the following
-                  card:
-                </p>
-              ),
+              <p>
+                Select <strong>{maxNum}</strong> numbers from the following
+                card:
+              </p>
+            ),
               (
                 <div className={`game-card ${mode}-card`}>
                   {nums.map(num => (
                     <div
                       key={num}
-                      className={`card-number${
-                        ticketNumber.includes(num)
-                          ? ` number-selected ${mode}-lotto`
-                          : ''
-                      }`}
+                      className={`card-number${ticketNumber.includes(num)
+                        ? ` number-selected ${mode}-lotto`
+                        : ''
+                        }`}
                       onClick={() => orderAndSet(num)}
                     >
                       <span>{num}</span>
@@ -151,7 +142,7 @@ function App () {
                   ))}
                 </div>
               ))
-            : [<p>Coming Soon...</p>]}
+            : "Coming Soon..."}
         </section>
 
         <section className='results'>
@@ -180,8 +171,7 @@ function App () {
               disabled={
                 ticketNumber.length !== maxNum ||
                 result.length ||
-                (!ticketNumber.length && !result.length) ||
-                !walletConnected
+                (!ticketNumber.length && !result.length)
               }
             >
               <FiPlayCircle /> Buy Ticket!

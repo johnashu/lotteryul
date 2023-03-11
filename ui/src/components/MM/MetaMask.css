@@ -1,0 +1,82 @@
+.menuBarWallet {
+    background-color: #000;
+    color: #d7edff;
+    padding: 0px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row
+}
+
+.connected-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.connected {
+    background-color: green;
+}
+
+.connecting {
+    background-color: orange;
+}
+
+.disconnected {
+    background-color: red;
+}
+
+
+.wallet-button {
+    border-radius: 5px;
+    border: 0;
+    padding: 20px 30px;
+    color: #fff;
+    font-family: 'Andika New Basic', sans-serif;
+    text-transform: uppercase;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+
+
+.wallet-button-connect {
+    border-radius: 5px;
+    border: 0;
+    padding: 20px 30px;
+    color: #000;
+    font-family: 'Andika New Basic', sans-serif;
+    text-transform: uppercase;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.wallet-button svg {
+    margin-right: 5px;
+}
+
+.wallet-button:disabled {
+    cursor: not-allowed;
+    background-color: #aaa;
+    color: #d1d1d1
+}
+
+@media screen and (max-width: 767px) {
+    .wallet-button {
+        width: 150px;
+        height: 50px;
+        font-size: 12px;
+        padding: 10px 20px;
+        margin-bottom: 10px;
+    }
+}
+
+.wallet-connect-button:hover {
+    background-color: #4cae4c;
+}
