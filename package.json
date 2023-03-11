@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@ethersproject/shims": "^5.7.0",
+    "metamask-react": "^2.6.0"
+  }
+}
