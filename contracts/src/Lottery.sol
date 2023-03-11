@@ -25,7 +25,7 @@ contract Lottery {
     //  41-49 = ???
     //  50-60 = timestamp created up to 1099511627775 which is > year 3999 :P
     //  61-64 = id game id 1-65535
-    mapping(bytes32 playerKey => bytes32 ticket) public playerTickets;
+    mapping(bytes32 playerKey => bytes32 ticket) private playerTickets;
 
     // Slot 0x1
     // Store an encoded bytes at id x
@@ -38,18 +38,38 @@ contract Lottery {
     // 0xf | f00f0f00000000000000000000000000f0000000000f0000f | 006408f4f | f8401
     mapping(uint256 gameId => bytes32 gameData) private games;
 
-    // Number of Games - Slot 0x2
-    uint256 public gameId = 0x1; // initialise
-
-    // min blocks before a draw can be set. - Slot 0x3
-    uint256 constant TS_OFFSET = 100;
-
-    // Slot 0x4
+    // Slot 0x2
     // How many users have played with a ticket.  We can use this to check if there are any winners.
     // Depending on the outcome by querying this map with the winning numbers word.
     mapping(bytes32 ticket => uint256 numberOfTickets) public ticketsInPlay;
 
+    // Number of Games - Slot 0x3
+    uint256 public gameId = 0x1; // initialise
+
+    // min blocks before a draw can be set. - Slot 0x4
+    uint40 public constant TS_OFFSET = 100;
+
     error DrawCanOnlyBeInTheFuture();
+    error DrawDateHasNotPassed();
+
+    function playerNumbers(address _player, uint32 _gameId) public view returns (bytes32 numbers) {
+        assembly {
+            // shift address and add the game id to player 'key'
+            let shifted := shl(0x60, _player)
+            let state := xor(shifted, _gameId)
+
+            // Store player in memory scratch space.
+            mstore(0x0, state)
+            // Store slot number in scratch space after player.
+            mstore(0x20, playerTickets.slot)
+            // Create hash from player and slot
+            let hash := keccak256(0x0, 0x40)
+
+            // load and return the players ticket numbers.
+            numbers :=
+                and(sload(keccak256(0x0, 0x40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000)
+        }
+    }
 
     function drawResultNumbers(uint32 _gameId) public view returns (bytes32 result) {
         assembly {
@@ -58,7 +78,22 @@ contract Lottery {
             // Store slot number in scratch space after id.
             mstore(0x20, games.slot)
             // Create hash from gameId and slot
-            result := and(sload(keccak256(0x0, 0x40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000)
+            result :=
+                and(sload(keccak256(0x0, 0x40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000)
+        }
+    }
+
+    function drawDate(uint32 _gameId) public view returns (uint64 result) {
+        assembly {
+            // Store gameId in memory scratch space.
+            mstore(0x0, _gameId)
+            // Store slot number in scratch space after id.
+            mstore(0x20, games.slot)
+            // Create hash from gameId and slot
+            result :=
+                and(
+                    shr(16, sload(keccak256(0x0, 0x40))), 0x000000000000000000000000000000000000000000000000000000FFFFFFFFFF
+                )
         }
     }
 
@@ -82,7 +117,7 @@ contract Lottery {
             //  inc gameId before we start messing with memory :P
             sstore(gameId.slot, add(_gameId, 1))
 
-            // add id and timestamp
+            // add id and block number
             let state := xor(shl(16, drawDate), 0xF000000000000000000000000000000000000000000000000000000000000000)
             // Store id in memory scratch space.
             mstore(0x0, _gameId)
@@ -101,10 +136,13 @@ contract Lottery {
     /// Here is where we do the check for '6 numbers'.  It means we only execute it 1 time.
     /// Because we are creating a bitmask, any winning tickets have to match EXACTLY with the positions on the mask.
     function addwinningTicket(uint32 _gameId) public returns (bytes32 res) {
+        //                                   Plus 1 incase a 0 value is passed.
+        if (block.number <= (drawDate(_gameId) + 1)) revert DrawDateHasNotPassed();
+
         // Mock value but should be a 32 byte VRF from a trusted source on chain or oracle.
         uint256 randomNumber = 73333815688330388439497394924671604269744030172485877353949151816386893917160;
-        assembly {
 
+        assembly {
             // Random number selector mask.
             let randomMask := 0x00000000000000000000000000000000000000000000000000000000000000FF
 

@@ -23,23 +23,24 @@ contract LotteryTest is Test {
     }
 
     function testLottery(uint256 x) public {
-        vm.roll(109);
+        vm.roll(blockNumber);
         lottery.gameId();
-        lottery.addGame(blockNumber++);
+        lottery.addGame(blockNumber + lottery.TS_OFFSET());
         lottery.drawResultNumbers(1);
         vm.prank(address(0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2));
+        vm.roll(blockNumber + lottery.TS_OFFSET() + lottery.TS_OFFSET());
         lottery.addwinningTicket(1);
         bytes32 nums = lottery.drawResultNumbers(1);
         lottery.drawResultFull(1);
 
         lottery.addPlayerTickets(winner, drawResult, 1);
-        lottery.playerTickets(winnerHash);
+        lottery.playerNumbers(winner, 1);
 
         lottery.checkWinner(winner, 1);
-        assertEq(lottery.playerTickets(winnerHash), nums);
+        assertEq(lottery.playerNumbers(winner, 1), nums);
 
         lottery.addPlayerTickets(loser, losingTicket, 1);
-        lottery.playerTickets(loserHash);
+        lottery.playerNumbers(loser, 1);
         lottery.checkWinner(loser, 1);
 
         lottery.addPlayerTickets(loser, allOn, 1);
@@ -55,7 +56,15 @@ contract LotteryTest is Test {
             lottery.gameId();
             lottery.addGame(blockNumber++);
             lottery.drawResultNumbers(i);
+            lottery.drawDate(i);
+            lottery.drawResultFull(i);
         }
+    }
+    function testFailDrawDateHasNotPassed() public {
+        vm.roll(109);
+        lottery.gameId();
+        lottery.addGame(blockNumber++);
+        lottery.addwinningTicket(1);
     }
 
     function testFailAddGameOverflow() public {
