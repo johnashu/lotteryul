@@ -69,8 +69,9 @@ contract Lottery {
         return allGames;
     }
 
+    // TODO: track and link ids.. 
     function getAllGamesOfPlayer(address _player) public view returns (bytes32[] memory) {
-        uint256 LIMIT = 9999;
+        uint256 LIMIT = 10;
         bytes32[] memory allPlayerGames = new bytes32[](LIMIT);
         unchecked {
             uint32 counter;
