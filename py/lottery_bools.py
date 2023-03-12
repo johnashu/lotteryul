@@ -134,7 +134,15 @@ print(hex(nums_added))
 
 print((), 0x1f  << 0x9f)
 
-print(hex(15*4))
+print(hex(31337))
 print(hex((0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2 << 0x60 ) ^ 1))
 
 print(id_mask)
+
+hex_arr = 0xF00000000000000000000000000000000000000000000000000000000000000
+base = 0xF00000000000000000000000000000000000000000000000000000000000000 
+bit_pos = 12 * 4
+shifted = base >> bit_pos
+hex_arr = hex_arr ^ shifted
+
+print(hex(hex_arr))

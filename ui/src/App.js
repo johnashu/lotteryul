@@ -5,8 +5,11 @@ import { FiX, FiRefreshCw, FiPlayCircle } from 'react-icons/fi'
 import { MetaMaskConnect, useState } from './components/MM/MetaMaskConnect';
 import Button from './components/Button'
 import NumbersArea from './components/NumbersArea'
+import {ContractObject, addNewTicket} from './components/contract/ContractObject'
 
 import './App.css'
+
+const lotteryAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 
 function App() {
   const [nums, setNums] = useState([])
@@ -39,6 +42,7 @@ function App() {
   const orderAndSet = num => {
     if (ticketNumber.includes(num)) return
     let length = 6
+
     return (
       ticketNumber.length < length &&
       setticketNumber([...ticketNumber, num].sort((a, b) => a - b))
@@ -57,6 +61,26 @@ function App() {
     let arr = []
 
     if (ticketNumber.length < length) return
+
+    let hex_arr = BigInt("0xF00000000000000000000000000000000000000000000000000000000000000");
+    let base = BigInt("0xF00000000000000000000000000000000000000000000000000000000000000");
+
+    for (let i = 0; i < length; i++) {
+      console.log(ticketNumber[i])
+      let bit_pos = BigInt(ticketNumber[i] * 4)
+      let shifted = base >> bit_pos;
+      hex_arr = hex_arr ^ shifted;
+      console.log(hex_arr.toString(16), ticketNumber, bit_pos, shifted.toString(16));
+    }
+
+    console.log(hex_arr.toString(16), ticketNumber);
+
+
+    ContractObject(lotteryAddress).then(lotteryContract => {
+      addNewTicket(lotteryContract, hex_arr, 1)
+    })
+
+
 
     const shuffle = () => {
       let num = Math.ceil(Math.random() * index)
@@ -100,6 +124,17 @@ function App() {
           <GiClover />
           View Results
         </Button>
+
+        {/* getAllGames(1, 10)
+
+        [0xf00ff0000ff00000000000000000000f000000000000f0000000009897600000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897610000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897620000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897630000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897640000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897650000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897660000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897670000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897680000] */}
+
+
+        {/* getAllGamesOfPlayer(0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2)
+
+        [0xf00ff0000ff00000000000000000000f000000000000f0000000000000000001, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000002, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000003, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000004, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000005, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000006, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000007, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000008, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000009, 0x0000000000000000000000000000000000000000000000000000000000000000] */}
+
+
         <Button
           className='mode-button About-lotto'
           onClick={() => setMode('About')}

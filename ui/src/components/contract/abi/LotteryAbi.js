@@ -12,6 +12,36 @@ function lotteryAbi() {
     },
     {
       "inputs": [],
+      "name": "StartOrEndValueIncorrect",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "player",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "numbers",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "gameId",
+          "type": "uint32"
+        }
+      ],
+      "name": "NewTicketAdded",
+      "type": "event"
+    },
+    {
+      "inputs": [],
       "name": "TS_OFFSET",
       "outputs": [
         {
@@ -39,19 +69,14 @@ function lotteryAbi() {
     {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "player",
-          "type": "address"
-        },
-        {
           "internalType": "bytes32",
           "name": "ticketBytes",
           "type": "bytes32"
         },
         {
-          "internalType": "uint256",
+          "internalType": "uint32",
           "name": "_gameId",
-          "type": "uint256"
+          "type": "uint32"
         }
       ],
       "name": "addPlayerTickets",
@@ -181,6 +206,49 @@ function lotteryAbi() {
     {
       "inputs": [
         {
+          "internalType": "uint32",
+          "name": "start",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "end",
+          "type": "uint32"
+        }
+      ],
+      "name": "getAllGames",
+      "outputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_player",
+          "type": "address"
+        }
+      ],
+      "name": "getAllGamesOfPlayer",
+      "outputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "_player",
           "type": "address"
@@ -224,4 +292,4 @@ function lotteryAbi() {
   ]
 }
 
-export default lotteryAbi
+export {lotteryAbi}

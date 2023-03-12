@@ -7,6 +7,7 @@ import { useConnectedMetaMask, useMetaMask } from 'metamask-react'
 
 const BASE_DECIMALS = 4
 const NATIVE_CHAIN_ID = '0x63564c40' //Harmony
+const LOCAL_ID = '0x7a69' // local 31337
 const CHAIN_NAME = 'Harmony ONE Mainnet'
 
 function getSetBalance(address, setBalance) {
@@ -28,11 +29,12 @@ function getSetBalance(address, setBalance) {
 function ConnectedMM() {
   const [balance, setBalance] = useState(0)
   const {
-    ethereum,
+    
     // typed as string - can not be null
     account,
     // typed as string - can not be null
-    // chainId
+    chainId,
+    ethereum
   } = useConnectedMetaMask();
 
   getSetBalance(account, setBalance)
@@ -63,10 +65,10 @@ function WrongNetwork(chainId) {
 
 const MetaMaskConnect = () => {
 
-  const { status, connect, chainId } = useMetaMask()
+  const { status, chainId, connect } = useMetaMask()
   // console.log(status, account, chainId, ethereum )
 
-  if (chainId !== NATIVE_CHAIN_ID) {
+  if (chainId !== NATIVE_CHAIN_ID && chainId !== LOCAL_ID) {
     return WrongNetwork(NATIVE_CHAIN_ID)
   }
 

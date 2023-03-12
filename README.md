@@ -2,6 +2,11 @@
 
 A lottery dApp using Bitmasking and Binary Flags to store and assess tickets.
 
+* Notes and methods in Python for quick and dirty play.
+
+ `./py`
+
+
 # TroubleShooting
 
 > Error: error:0308010C:digital envelope routines::unsupported
@@ -17,3 +22,4 @@ A lottery dApp using Bitmasking and Binary Flags to store and assess tickets.
 On PowerShell:
 
 `$env:NODE_OPTIONS = "--openssl-legacy-provider"`
+

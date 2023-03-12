@@ -56,6 +56,8 @@ contract Lottery {
     error DrawDateHasNotPassed();
     error StartOrEndValueIncorrect();
 
+    event NewTicketAdded(address player, bytes32 numbers, uint32 gameId);
+
     function getAllGames(uint32 start, uint32 end) public view returns (bytes32[] memory) {
         if (end > gameId || start == 0) revert StartOrEndValueIncorrect();
         bytes32[] memory allGames = new bytes32[](end-start);
@@ -69,7 +71,7 @@ contract Lottery {
         return allGames;
     }
 
-    // TODO: track and link ids.. 
+    // TODO: track and link ids..
     function getAllGamesOfPlayer(address _player) public view returns (bytes32[] memory) {
         uint256 LIMIT = 10;
         bytes32[] memory allPlayerGames = new bytes32[](LIMIT);
@@ -248,7 +250,7 @@ contract Lottery {
     /// Example - 0xFF00F0F00000000000000000000000000F0000000000F000000000000000000F
     // 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
     // 0x10000000000000000000000000000000000000000
-    function addPlayerTickets(bytes32 ticketBytes, uint256 _gameId) public returns (bytes32 result) {
+    function addPlayerTickets(bytes32 ticketBytes, uint32 _gameId) public returns (bytes32 result) {
         // 45162 / 8162 GAS - Normal Solidity..
 
         // Very small gas advantage here using assembly..
@@ -282,6 +284,8 @@ contract Lottery {
 
             // result := xor(shl(0x60, caller()), _gameId)
         }
+
+        emit NewTicketAdded(msg.sender, ticketBytes, _gameId);
     }
 
     /// @notice checks a ticket against the winning numbers

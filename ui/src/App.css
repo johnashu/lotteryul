@@ -16,7 +16,7 @@
 	display: flex;
 	justify-content: center;
 	align-content: space-evenly;
-	align-items: start;
+	align-items: flex-start;
 	flex-direction: row ;
 	padding: 10px;
 	gap: 10px;
