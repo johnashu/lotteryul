@@ -1,12 +1,13 @@
 // https://www.npmjs.com/package/metamask-react
 import './MetaMask.css'
 import { useState } from 'react'
-// Import the ethers library
+// // Import the ethers library
 import { ethers } from 'ethers'
 import { useConnectedMetaMask, useMetaMask } from 'metamask-react'
 
 const BASE_DECIMALS = 4
 const NATIVE_CHAIN_ID = '0x63564c40' //Harmony
+const CHAIN_NAME = 'Harmony ONE Mainnet'
 
 function getSetBalance(address, setBalance) {
   window.ethereum
@@ -27,10 +28,11 @@ function getSetBalance(address, setBalance) {
 function ConnectedMM() {
   const [balance, setBalance] = useState(0)
   const {
+    ethereum,
     // typed as string - can not be null
     account,
     // typed as string - can not be null
-    chainId
+    // chainId
   } = useConnectedMetaMask();
 
   getSetBalance(account, setBalance)
@@ -40,37 +42,33 @@ function ConnectedMM() {
 
   return (
 
-    <div className="wallet-button">
+    <div className="wallet-button" onClick={() => ethereum.enable()}>
       <div className={`connected-dot connected `} /> {truncatedAddress}
-      <br/>{balance}
+      <br />{Math.round(balance * 10 ** BASE_DECIMALS) / 10 ** BASE_DECIMALS}
     </div>
   );
 
 
 }
 
-// function WrongNetwork(chainId) {
-//   const { switchChain } = useMetaMask()
-//   // Request a switch to Ethereum Mainnet
-//   return (
-//     <button
-//       style={{ margin: 'auto', display: 'block' }}
-//       onClick={() => switchChain(chainId)}
-//     >
-//       Switch to Ethereum Mainnet
-//     </button>
-//   )
-// }
+function WrongNetwork(chainId) {
+  const { switchChain } = useMetaMask()
+  // Request a switch to Ethereum Mainnet
+  return (<div className="wallet-button" onClick={() => switchChain(chainId)}>
+    <div className={`connected-dot disconnected `} /> Switch to {CHAIN_NAME}
+  </div>);
+
+}
 
 
 const MetaMaskConnect = () => {
 
-  // if (chainId !== NATIVE_CHAIN_ID) {
-  //   return WrongNetwork(NATIVE_CHAIN_ID)
-  // }
+  const { status, connect, chainId } = useMetaMask()
+  // console.log(status, account, chainId, ethereum )
 
-  const { status, connect, account, chainId, ethereum } = useMetaMask()
-  // console.log(status, connect, account, chainId, ethereum )
+  if (chainId !== NATIVE_CHAIN_ID) {
+    return WrongNetwork(NATIVE_CHAIN_ID)
+  }
 
   if (status === 'initializing')
     return <div className="wallet-button">Synchronising...</div>
@@ -88,4 +86,4 @@ const MetaMaskConnect = () => {
 }
 
 
-export default MetaMaskConnect
+export { MetaMaskConnect, useState }

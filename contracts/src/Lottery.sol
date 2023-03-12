@@ -19,12 +19,15 @@ pragma solidity 0.8.18;
 contract Lottery {
     // Slot 0x0
     // Log the numbers of a player for a game at id x
-    // Players can only have 1 play per game.
+    // Players can only have 1 ticket per game.
+    // Games are tracked and linked for searching.
     //  map
     //  0-39 = player Address (160 bits) 0x9f
-    //  41-49 = ???
-    //  50-60 = timestamp created up to 1099511627775 which is > year 3999 :P
-    //  61-64 = id game id 1-65535
+    //  40-47 = ???
+    //  48-51 = Prev Id of this User (game Id = 0x0)
+    //  52-55 = Next Id of this user (game Id = 0x0)
+    //  56-59 = Total number of games (gameId = 0x0)  (0xFFFF)
+    //  60-63 = id game id 1-65535 (0xFFFF)
     mapping(bytes32 playerKey => bytes32 ticket) private playerTickets;
 
     // Slot 0x1
@@ -51,6 +54,40 @@ contract Lottery {
 
     error DrawCanOnlyBeInTheFuture();
     error DrawDateHasNotPassed();
+    error StartOrEndValueIncorrect();
+
+    function getAllGames(uint32 start, uint32 end) public view returns (bytes32[] memory) {
+        if (end > gameId || start == 0) revert StartOrEndValueIncorrect();
+        bytes32[] memory allGames = new bytes32[](end-start);
+        unchecked {
+            uint32 counter;
+            for (uint256 i = start; i < end; i++) {
+                allGames[counter] = games[i];
+                ++counter;
+            }
+        }
+        return allGames;
+    }
+
+    function getAllGamesOfPlayer(address _player) public view returns (bytes32[] memory) {
+        uint256 LIMIT = 9999;
+        bytes32[] memory allPlayerGames = new bytes32[](LIMIT);
+        unchecked {
+            uint32 counter;
+            for (uint32 i; i < gameId; i++) {
+                bytes32 _playerNumbers = playerNumbers(_player, i);
+                if (counter >= LIMIT) break;
+                if (_playerNumbers != 0x0) {
+                    assembly {
+                        _playerNumbers := xor(_playerNumbers, i)
+                    }
+                    allPlayerGames[counter] = _playerNumbers;
+                    ++counter;
+                }
+            }
+        }
+        return allPlayerGames;
+    }
 
     function playerNumbers(address _player, uint32 _gameId) public view returns (bytes32 numbers) {
         assembly {
@@ -210,7 +247,7 @@ contract Lottery {
     /// Example - 0xFF00F0F00000000000000000000000000F0000000000F000000000000000000F
     // 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
     // 0x10000000000000000000000000000000000000000
-    function addPlayerTickets(address player, bytes32 ticketBytes, uint256 _gameId) public returns (bytes32 result) {
+    function addPlayerTickets(bytes32 ticketBytes, uint256 _gameId) public returns (bytes32 result) {
         // 45162 / 8162 GAS - Normal Solidity..
 
         // Very small gas advantage here using assembly..
@@ -221,7 +258,7 @@ contract Lottery {
         assembly {
             // shift address and add the game id to player 'key'
             // Store player in memory scratch space.
-            mstore(0x0, xor(shl(0x60, player), _gameId))
+            mstore(0x0, xor(shl(0x60, caller()), _gameId))
             // Store slot number in scratch space after player.
             mstore(0x20, playerTickets.slot)
             // Create hash from player and slot
@@ -242,7 +279,7 @@ contract Lottery {
             // Store new ticket for the player.
             sstore(ticketHash, newAmount)
 
-            result := xor(ticketBytes, _gameId)
+            // result := xor(shl(0x60, caller()), _gameId)
         }
     }
 

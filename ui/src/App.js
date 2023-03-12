@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { GiClover } from 'react-icons/gi'
 import { FiX, FiRefreshCw, FiPlayCircle } from 'react-icons/fi'
 
-import MetaMaskConnect from './components/MM/MetaMaskConnect';
+import { MetaMaskConnect, useState } from './components/MM/MetaMaskConnect';
 import Button from './components/Button'
 import NumbersArea from './components/NumbersArea'
 
@@ -15,7 +15,6 @@ function App() {
   const [result, setResult] = useState([])
   const [matches, setMatches] = useState([])
   const [maxNum, setMaxNum] = useState(0)
-  const [walletConnected, setWalletConnected] = useState(false)
 
   useEffect(() => {
     const createCard = () => {
@@ -85,39 +84,39 @@ function App() {
 
   return (
     <div className='App'>
- 
-        <section className='mode'>
-          <Button
-            className='mode-button create-ticket-lotto'
-            onClick={() => setMode('create-ticket')}
-          >
-            <GiClover />
-            Create Ticket
-          </Button>
-          <Button
-            className='mode-button View-Results-lotto'
-            onClick={() => setMode('View-Results')}
-          >
-            <GiClover />
-            View Results
-          </Button>
-          <Button
-            className='mode-button About-lotto'
-            onClick={() => setMode('About')}
-          >
-            <GiClover />
-            About Lotto
-          </Button>
 
-            <MetaMaskConnect />
- 
-          
-        </section>
-        
-    
+      <section className='mode'>
+        <Button
+          className='mode-button create-ticket-lotto'
+          onClick={() => setMode('create-ticket')}
+        >
+          <GiClover />
+          Create Ticket
+        </Button>
+        <Button
+          className='mode-button View-Results-lotto'
+          onClick={() => setMode('View-Results')}
+        >
+          <GiClover />
+          View Results
+        </Button>
+        <Button
+          className='mode-button About-lotto'
+          onClick={() => setMode('About')}
+        >
+          <GiClover />
+          About Lotto
+        </Button>
+
+        <MetaMaskConnect />
+
+
+      </section>
+
+
       <main>
-          <h1 className={mode ? `${mode}-lotto` : ''}> <GiClover /> {mode}</h1>
-  
+        <h1 className={mode ? `${mode}-lotto` : ''}> <GiClover /> {mode}</h1>
+
         <section className='card'>
           {mode == 'create-ticket' || !mode
             ? ((
