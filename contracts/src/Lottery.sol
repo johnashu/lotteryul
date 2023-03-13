@@ -50,15 +50,27 @@ contract Lottery {
     uint256 public gameId = 0x1; // initialise
 
     // min blocks before a draw can be set. - Slot 0x4
-    uint40 public constant TS_OFFSET = 100;
+    uint40 public constant TS_OFFSET = 0x1;
 
     error DrawCanOnlyBeInTheFuture();
     error DrawDateHasNotPassed();
     error StartOrEndValueIncorrect();
 
-    event NewTicketAdded(address player, bytes32 numbers, uint32 gameId);
+    event NewTicketAdded(address indexed player, bytes32 numbers, uint32 indexed gameId);
 
-    function getAllGames(uint32 start, uint32 end) public view returns (bytes32[] memory) {
+    function getAllGames() public view returns (bytes32[] memory) {
+        bytes32[] memory allGames = new bytes32[](gameId);
+        unchecked {
+            uint32 counter;
+            for (uint256 i = 1; i < gameId+1; i++) {
+                allGames[counter] = games[i];
+                ++counter;
+            }
+        }
+        return allGames;
+    }
+
+    function getGamesPagniate(uint32 start, uint32 end) public view returns (bytes32[] memory) {
         if (end > gameId || start == 0) revert StartOrEndValueIncorrect();
         bytes32[] memory allGames = new bytes32[](end-start);
         unchecked {
@@ -175,9 +187,9 @@ contract Lottery {
     /// Checks each position 1-49 to ensure that 6 unique positions exist.
     /// Here is where we do the check for '6 numbers'.  It means we only execute it 1 time.
     /// Because we are creating a bitmask, any winning tickets have to match EXACTLY with the positions on the mask.
-    function addwinningTicket(uint32 _gameId) public returns (bytes32 res) {
+    function addwinningTicket(uint32 _gameId) public {
         //                                   Plus 1 incase a 0 value is passed.
-        if (block.number <= (drawDate(_gameId) + 1)) revert DrawDateHasNotPassed();
+        if (block.number <= (drawDate(_gameId) + 1)) _revert(DrawDateHasNotPassed.selector);
 
         // Mock value but should be a 32 byte VRF from a trusted source on chain or oracle.
         uint256 randomNumber = 73333815688330388439497394924671604269744030172485877353949151816386893917160;
@@ -234,8 +246,6 @@ contract Lottery {
 
             let updatedTicket := xor(sload(gameHash), state)
 
-            res := updatedTicket
-
             // save state to storage.
             sstore(gameHash, updatedTicket)
 
@@ -250,7 +260,7 @@ contract Lottery {
     /// Example - 0xFF00F0F00000000000000000000000000F0000000000F000000000000000000F
     // 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
     // 0x10000000000000000000000000000000000000000
-    function addPlayerTickets(bytes32 ticketBytes, uint32 _gameId) public returns (bytes32 result) {
+    function addPlayerTickets(bytes32 ticketBytes, uint32 _gameId) public {
         // 45162 / 8162 GAS - Normal Solidity..
 
         // Very small gas advantage here using assembly..
@@ -281,8 +291,6 @@ contract Lottery {
             let newAmount := add(sload(ticketHash), 1)
             // Store new ticket for the player.
             sstore(ticketHash, newAmount)
-
-            // result := xor(shl(0x60, caller()), _gameId)
         }
 
         emit NewTicketAdded(msg.sender, ticketBytes, _gameId);

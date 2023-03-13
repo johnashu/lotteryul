@@ -20,25 +20,31 @@ contract LotteryTest is Test {
     uint256 ADD_BLOCKS = 100;
 
     uint40 maxTs = 1099511627775;
-    uint40 blockNumber = 10_000_123;
 
     function setUp() public {
         lottery = new Lottery();
     }
 
     function testLotteryFull() public {
+        uint40 blockNumber = 10_000_120;
         vm.startPrank(winner);
-        uint32 len = 10; //type(uint32).max - 1;
+
         lottery.gameId();
+
+        uint32 len = 10; //type(uint32).max - 1;
 
         for (uint32 i = 1; i < len; i++) {
             vm.roll(++blockNumber);
             lottery.addGame(blockNumber + lottery.TS_OFFSET());
+            blockNumber++;
 
             vm.roll(blockNumber + lottery.TS_OFFSET() + lottery.TS_OFFSET());
 
             lottery.addPlayerTickets(drawResult, i);
             lottery.playerNumbers(winner, i);
+
+            emit log_uint(lottery.drawDate(i));
+            emit log_uint(block.number);
 
             lottery.addwinningTicket(i);
             bytes32 nums = lottery.drawResultNumbers(i);
@@ -60,50 +66,22 @@ contract LotteryTest is Test {
 
         lottery.gameId();
 
-        lottery.getAllGames(1, 10);
+        lottery.getGamesPagniate(1, 10);
         lottery.getAllGamesOfPlayer(winner);
         lottery.getAllGamesOfPlayer(loser);
     }
 
-    function testLottery(uint256 x) public {
-        vm.roll(blockNumber);
-        lottery.gameId();
-        lottery.addGame(blockNumber + lottery.TS_OFFSET());
-        lottery.drawResultNumbers(1);
+    function testAddGame() public {
+        uint40 blockNumber = 10_000_120;
+        for (uint32 i = 1; i < 1000; i++) {
+            vm.roll(++blockNumber);
+            lottery.addGame(blockNumber + lottery.TS_OFFSET());
+            blockNumber++;
+            vm.roll(blockNumber + lottery.TS_OFFSET() + lottery.TS_OFFSET());
 
-        vm.prank(address(0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2));
-        vm.roll(blockNumber + lottery.TS_OFFSET() + lottery.TS_OFFSET());
-
-        lottery.addPlayerTickets(drawResult, 1);
-        lottery.playerNumbers(winner, 1);
-
-        lottery.addwinningTicket(1);
-        lottery.ticketsInPlay(_ticketsInPlay);
-        bytes32 nums = lottery.drawResultNumbers(1);
-        lottery.drawResultFull(1);
-
-        lottery.checkWinner(winner, 1);
-        assertEq(lottery.playerNumbers(winner, 1), nums);
-        assertEq(lottery.ticketsInPlay(_ticketsInPlay), 1);
-
-        vm.prank(loser);
-        lottery.addPlayerTickets(losingTicket, 1);
-        lottery.playerNumbers(loser, 1);
-        lottery.checkWinner(loser, 1);
-
-        lottery.addPlayerTickets(allOn, 1);
-        lottery.checkWinner(loser, 1);
-
-        lottery.addPlayerTickets(allOff, 1);
-        vm.expectRevert();
-        lottery.checkWinner(loser, 1);
-        lottery.gameId();
-    }
-
-    function testAddGame(uint256 x) public {
-        for (uint32 i = 1; i < 10; i++) {
             lottery.gameId();
-            lottery.addGame(blockNumber++);
+            lottery.addwinningTicket(1);
+
             lottery.drawResultNumbers(i);
             lottery.drawDate(i);
             lottery.drawResultFull(i);
@@ -111,6 +89,7 @@ contract LotteryTest is Test {
     }
 
     function testFailDrawDateHasNotPassed() public {
+        uint40 blockNumber = 10_000_120;
         vm.roll(109);
         lottery.gameId();
         lottery.addGame(blockNumber++);
