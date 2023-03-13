@@ -5,7 +5,9 @@ import { useState } from 'react'
 import { ethers } from 'ethers'
 import { useConnectedMetaMask, useMetaMask } from 'metamask-react'
 
+
 const BASE_DECIMALS = 4
+const NATIVE_SYMBOL = 'ONE'
 const NATIVE_CHAIN_ID = '0x63564c40' //Harmony
 const LOCAL_ID = '0x7a69' // local 31337
 const CHAIN_NAME = 'Harmony ONE Mainnet'
@@ -29,7 +31,6 @@ function getSetBalance(address, setBalance) {
 function ConnectedMM() {
   const [balance, setBalance] = useState(0)
   const {
-    
     // typed as string - can not be null
     account,
     // typed as string - can not be null
@@ -41,26 +42,25 @@ function ConnectedMM() {
 
   const truncatedAddress = `${account.substring(0, 6)}...${account.substring(38)}`;
 
-
   return (
 
     <div className="wallet-button" onClick={() => ethereum.enable()}>
       <div className={`connected-dot connected `} /> {truncatedAddress}
-      <br />{Math.round(balance * 10 ** BASE_DECIMALS) / 10 ** BASE_DECIMALS}
+      <br />{Math.round(balance * 10 ** BASE_DECIMALS) / 10 ** BASE_DECIMALS}  {NATIVE_SYMBOL}
     </div>
   );
 
 
 }
 
-function WrongNetwork(chainId) {
-  const { switchChain } = useMetaMask()
-  // Request a switch to Ethereum Mainnet
-  return (<div className="wallet-button" onClick={() => switchChain(chainId)}>
-    <div className={`connected-dot disconnected `} /> Switch to {CHAIN_NAME}
-  </div>);
+// function WrongNetwork(chainId) {
+//   const { switchChain } = useMetaMask()
+//   // Request a switch to Ethereum Mainnet
+//   return (<div className="wallet-button" onClick={() => switchChain(chainId)}>
+//     <div className={`connected-dot disconnected `} /> Switch to {CHAIN_NAME}
+//   </div>);
 
-}
+// }
 
 
 const MetaMaskConnect = () => {
@@ -68,9 +68,10 @@ const MetaMaskConnect = () => {
   const { status, chainId, connect } = useMetaMask()
   // console.log(status, account, chainId, ethereum )
 
-  if (chainId !== NATIVE_CHAIN_ID && chainId !== LOCAL_ID) {
-    return WrongNetwork(NATIVE_CHAIN_ID)
-  }
+  // Sends MM wild :P
+  // if (chainId !== NATIVE_CHAIN_ID && chainId !== LOCAL_ID) {
+  //   return WrongNetwork(NATIVE_CHAIN_ID)
+  // }
 
   if (status === 'initializing')
     return <div className="wallet-button">Synchronising...</div>

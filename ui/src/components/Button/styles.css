@@ -1,14 +1,79 @@
-.game-button {
+.wallet-button {
+	padding: 0;
+	margin-top: 0.5%;
+	color: #fff;
+	font-family: 'Andika New Basic', sans-serif;
+	/* text-transform: uppercase; */
+	font-weight: 700;
+	align-items: center;
+	cursor: pointer;
+	display: inline-flex;
+	/* min-width:125px; */
+}
+
+
+
+.game-button-mode {
+	
+	/* padding: 2%; */
 	border-radius: 8px;
 	border: 0;
-	padding: 20px 30px;
+	margin: 1% 0% 1% 0%;
+	color: #fff;
+	font-family: 'Andika New Basic', sans-serif;
+	font-weight: 700;
+	align-items: center;
+	cursor: pointer;
+	max-height: 50px;
+	min-width:110px;
+}
+
+.game-button {
+	margin-right: 1%;
+	border-radius: 8px;
+	border: 0;
+	padding: 1%;
 	color: #fff;
 	font-family: 'Andika New Basic', sans-serif;
 	text-transform: uppercase;
 	font-weight: 700;
 	align-items: center;
 	cursor: pointer;
+	min-width:125px;
 }
+
+.game-button-buy-reset {
+	
+	border-radius: 12px;
+	border: 0;
+	padding: 2%;
+	color: #ffffff;
+	font-family: 'Andika New Basic', sans-serif;
+	text-transform: uppercase;
+	font-weight: 700;
+	align-items: center;
+	cursor: pointer;
+	background-color: #03c4ff;
+	min-width:125px;
+	
+}
+
+.game-button-random-result {
+	margin-bottom: 2%;
+	border-radius: 12px;
+	border: 0;
+	padding: 2%;
+	color: #ffffff;
+	font-family: 'Andika New Basic', sans-serif;
+	text-transform: uppercase;
+	font-weight: 700;
+	align-items: center;
+	cursor: pointer;
+	background-color: #000;
+	min-width:100;
+	
+}
+
 
 .game-button svg {
 	margin-right: 5px;

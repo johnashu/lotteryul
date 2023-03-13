@@ -5,19 +5,65 @@ import { FiX, FiRefreshCw, FiPlayCircle } from 'react-icons/fi'
 import { MetaMaskConnect, useState } from './components/MM/MetaMaskConnect';
 import Button from './components/Button'
 import NumbersArea from './components/NumbersArea'
-import {ContractObject, addNewTicket} from './components/contract/ContractObject'
+import { ContractObject, addNewTicket, getAvailableGames, getPlayerNumbers, getGameResult, getGameDrawDate } from './components/contract/ContractObject'
 
 import './App.css'
 
-const lotteryAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+const lotteryAddress = "0xeD54542F6CEbfaE00549541fB05E9a8adb388372"
 
 function App() {
   const [nums, setNums] = useState([])
   const [ticketNumber, setticketNumber] = useState([])
-  const [mode, setMode] = useState('create-ticket')
+  const [mode, setMode] = useState('ticket')
   const [result, setResult] = useState([])
   const [matches, setMatches] = useState([])
   const [maxNum, setMaxNum] = useState(0)
+  const [currentGameId, setCurrentGameId] = useState(0)
+  const [currentGameDrawDate, setCurrentGameDrawDate] = useState(0)
+  const [availableGames, setAvailableGames] = useState([])
+  const [gamePlayed, setGamePlayed] = useState(false)
+
+  // Dropdown Item
+  const [isOpen, setIsOpen] = useState(false);
+
+  async function getGames() {
+    // Set the DropDown for Games:
+    ContractObject(lotteryAddress).then(lotteryContract => {
+      getAvailableGames(lotteryContract, setAvailableGames)
+    })
+  }
+
+  async function getResult() {
+    // Set the DropDown for Games:
+    ContractObject(lotteryAddress).then(lotteryContract => {
+      getGameResult(lotteryContract, currentGameId, setResult)
+    })
+  }
+
+  useEffect(() => {
+    if (isOpen) {
+      getGames()
+      setIsOpen(false)
+    }
+  }, [isOpen]);
+
+
+
+
+  // Function to handle the selection of a game to change the game id
+  const handleGameIdChange = async event => {
+    let gameId = event.target.value
+    setCurrentGameId(gameId)
+
+    // Set the Player Game:
+    ContractObject(lotteryAddress).then(lotteryContract => {
+
+      getGameDrawDate(lotteryContract, gameId, setCurrentGameDrawDate)
+      getPlayerNumbers(lotteryContract, gameId, setticketNumber, setGamePlayed)
+
+    })
+    getResult()
+  }
 
   useEffect(() => {
     const createCard = () => {
@@ -55,32 +101,10 @@ function App() {
     setticketNumber(arr)
   }
 
-  const playGame = mode => {
+  const randomTicket = mode => {
     let length = 6
     let index = 49
     let arr = []
-
-    if (ticketNumber.length < length) return
-
-    let hex_arr = BigInt("0xF00000000000000000000000000000000000000000000000000000000000000");
-    let base = BigInt("0xF00000000000000000000000000000000000000000000000000000000000000");
-
-    for (let i = 0; i < length; i++) {
-      console.log(ticketNumber[i])
-      let bit_pos = BigInt(ticketNumber[i] * 4)
-      let shifted = base >> bit_pos;
-      hex_arr = hex_arr ^ shifted;
-      console.log(hex_arr.toString(16), ticketNumber, bit_pos, shifted.toString(16));
-    }
-
-    console.log(hex_arr.toString(16), ticketNumber);
-
-
-    ContractObject(lotteryAddress).then(lotteryContract => {
-      addNewTicket(lotteryContract, hex_arr, 1)
-    })
-
-
 
     const shuffle = () => {
       let num = Math.ceil(Math.random() * index)
@@ -91,7 +115,33 @@ function App() {
       arr.push(num)
     }
 
-    setResult(arr.sort((a, b) => a - b))
+    setticketNumber(arr.sort((a, b) => a - b))
+  }
+
+
+
+  const playGame = mode => {
+    let length = 6
+    let index = 49
+    let arr = []
+
+    if (ticketNumber.length < length) return
+
+    let hex_arr = BigInt("0xF000000000000000000000000000000000000000000000000000000000000000");
+    let base = BigInt("0xF000000000000000000000000000000000000000000000000000000000000000");
+
+    for (let i = 0; i < length; i++) {
+      let bit_pos = ticketNumber[i] * 4
+      let shifted = base >> BigInt(bit_pos);
+      hex_arr = hex_arr | shifted;
+      console.log(hex_arr.toString(16), ticketNumber, bit_pos, shifted.toString(16));
+    }
+
+
+    ContractObject(lotteryAddress).then(lotteryContract => {
+      addNewTicket(lotteryContract, hex_arr, currentGameId)
+    })
+
   }
 
   useEffect(() => {
@@ -104,43 +154,42 @@ function App() {
     setMatches([])
   }
 
-
+  const ColoredLine = ({ color }) => (
+    <hr
+      style={{
+        color: color,
+        backgroundColor: color,
+        height: 5
+      }}
+    />
+  );
 
   return (
     <div className='App'>
 
-      <section className='mode'>
+      <section className='buttons-wrapper-top'>
         <Button
-          className='mode-button create-ticket-lotto'
-          onClick={() => setMode('create-ticket')}
+          className='mode-button ticket-lotto game-button-mode'
+          onClick={() => setMode('ticket')}
         >
           <GiClover />
-          Create Ticket
+          Ticket
         </Button>
+
         <Button
-          className='mode-button View-Results-lotto'
-          onClick={() => setMode('View-Results')}
+          className='mode-button Results-lotto game-button-mode'
+          onClick={() => setMode('Results')}
         >
           <GiClover />
-          View Results
+          Results
         </Button>
 
-        {/* getAllGames(1, 10)
-
-        [0xf00ff0000ff00000000000000000000f000000000000f0000000009897600000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897610000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897620000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897630000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897640000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897650000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897660000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897670000, 0xf00ff0000ff00000000000000000000f000000000000f0000000009897680000] */}
-
-
-        {/* getAllGamesOfPlayer(0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2)
-
-        [0xf00ff0000ff00000000000000000000f000000000000f0000000000000000001, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000002, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000003, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000004, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000005, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000006, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000007, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000008, 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000009, 0x0000000000000000000000000000000000000000000000000000000000000000] */}
-
-
         <Button
-          className='mode-button About-lotto'
+          className='mode-button About-lotto game-button-mode'
           onClick={() => setMode('About')}
         >
           <GiClover />
-          About Lotto
+          About
         </Button>
 
         <MetaMaskConnect />
@@ -150,14 +199,38 @@ function App() {
 
 
       <main>
-        <h1 className={mode ? `${mode}-lotto` : ''}> <GiClover /> {mode}</h1>
+        <section className={mode ? `${mode}-lotto ticket-bar` : 'ticket-bar'}>
+
+          <h1 className={mode ? `${mode}-lotto ticket-title` : ''}> <GiClover /> {mode} </h1>
+          <ul className={mode ? `${mode}-lotto game-ids` : ''}>
+            <li style={{
+              listStyle: 'none'
+            }}
+            >
+              {/* Dropdown to select the Game Id */}
+              <select
+                onChange={handleGameIdChange}
+                onClick={() => setIsOpen(true)}
+                className={'game-ids-select'}
+              >
+                <option disabled defaultValue value=''>Select a Game</option>
+                {availableGames.map(i => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))
+                }
+              </select>
+            </li>
+          </ul>
+
+        </section>
 
         <section className='card'>
-          {mode == 'create-ticket' || !mode
+          {mode == 'ticket' || !mode
             ? ((
               <p>
-                Select <strong>{maxNum}</strong> numbers from the following
-                card:
+                Some Error has Occurred...
               </p>
             ),
               (
@@ -180,7 +253,56 @@ function App() {
         </section>
 
         <section className='results'>
-          <div>
+          <div id='buttons-wrapper'>
+            <Button
+              className={`action-button game-button-random-result`}
+              onClick={() => randomTicket(mode)}
+              disabled={
+                ticketNumber.length === maxNum ||
+                gamePlayed
+              }
+            >
+              <FiPlayCircle /> Random
+            </Button>
+
+            <Button
+              className={`action-button game-button-random-result`}
+              onClick={() => getResult()}
+
+            >
+              <FiPlayCircle /> Result
+            </Button>
+          </div>
+
+
+          <div id='buttons-wrapper'>
+
+
+            <Button
+              className={`action-button game-button-buy-reset`}
+              onClick={() => playGame(mode)}
+              disabled={
+                ticketNumber.length !== maxNum ||
+                result.length === 6 || gamePlayed ||
+                (!ticketNumber.length && !result.length)
+              }
+            >
+              <FiPlayCircle /> Buy
+            </Button>
+
+            <Button
+              className={`action-button game-button-buy-reset`}
+              onClick={reset}
+              disabled={
+                gamePlayed
+              }
+            >
+              <FiRefreshCw /> Reset
+            </Button>
+
+          </div>
+
+          <div className="draw-block-div">
             <h2>Your Numbers</h2>
             <NumbersArea id='ticketNumbers'>
               {ticketNumber.map((g, i) => {
@@ -198,42 +320,34 @@ function App() {
             </NumbersArea>
           </div>
 
-          <div id='buttons-wrapper'>
-            <Button
-              className={`action-button ${mode}-lotto`}
-              onClick={() => playGame(mode)}
-              disabled={
-                ticketNumber.length !== maxNum ||
-                result.length ||
-                (!ticketNumber.length && !result.length)
-              }
-            >
-              <FiPlayCircle /> Buy Ticket!
-            </Button>
+          <ColoredLine color="black" />
 
-            <Button
-              className={`action-button ${mode}-lotto`}
-              onClick={reset}
-              disabled={!result.length}
-            >
-              <FiRefreshCw /> Reset
-            </Button>
+          <div className="draw-block-div">
+
+            <h2>Draw Block</h2>
+            <p className="draw-block-paragraph">
+              {currentGameDrawDate}
+            </p>
           </div>
-          {!result.length ? null : (
-            <div>
-              <h2>Results</h2>
+          <ColoredLine color="black" />
+
+          <div className="draw-block-div">
+            <h2>Result</h2>
+
+            {!result.length ? "Game Has Not Been Drawn" : (
               <NumbersArea id='results' array={result} />
-            </div>
-          )}
+            )}
+          </div>
+          <ColoredLine color="black" />
+
           {!result.length ? null : (
-            <div>
-              <h2>Matches</h2>
+            <div className="draw-block-div">
+              <h2 >Matches</h2>
               {!result.length ? null : matches.length === 0 &&
                 result.length > 0 ? (
                 <p>You didn't match any number</p>
               ) : (
-                <p>You matched the following numbers:</p>
-              )}
+                "")}
               <NumbersArea id='matches' array={matches} />
             </div>
           )}

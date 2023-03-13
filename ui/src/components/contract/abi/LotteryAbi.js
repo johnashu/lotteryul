@@ -1,5 +1,5 @@
 function lotteryAbi() { 
-  return [
+  return  [
     {
       "inputs": [],
       "name": "DrawCanOnlyBeInTheFuture",
@@ -19,7 +19,7 @@ function lotteryAbi() {
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "player",
           "type": "address"
@@ -31,7 +31,7 @@ function lotteryAbi() {
           "type": "bytes32"
         },
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "uint32",
           "name": "gameId",
           "type": "uint32"
@@ -80,13 +80,7 @@ function lotteryAbi() {
         }
       ],
       "name": "addPlayerTickets",
-      "outputs": [
-        {
-          "internalType": "bytes32",
-          "name": "result",
-          "type": "bytes32"
-        }
-      ],
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -99,13 +93,7 @@ function lotteryAbi() {
         }
       ],
       "name": "addwinningTicket",
-      "outputs": [
-        {
-          "internalType": "bytes32",
-          "name": "res",
-          "type": "bytes32"
-        }
-      ],
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },
@@ -204,18 +192,7 @@ function lotteryAbi() {
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint32",
-          "name": "start",
-          "type": "uint32"
-        },
-        {
-          "internalType": "uint32",
-          "name": "end",
-          "type": "uint32"
-        }
-      ],
+      "inputs": [],
       "name": "getAllGames",
       "outputs": [
         {
@@ -236,6 +213,30 @@ function lotteryAbi() {
         }
       ],
       "name": "getAllGamesOfPlayer",
+      "outputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint32",
+          "name": "start",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "end",
+          "type": "uint32"
+        }
+      ],
+      "name": "getGamesPagniate",
       "outputs": [
         {
           "internalType": "bytes32[]",

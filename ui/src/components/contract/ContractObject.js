@@ -3,31 +3,136 @@
 import { ethers } from 'ethers'
 import { lotteryAbi } from './abi/LotteryAbi'
 
-const addNewTicket = async (pairContract, ticketNumbers, gameId) => {
+const getGameResult = async (lotteryContract, gameId, setResult) => {
+  try {
+    let numbers = await lotteryContract.drawResultNumbers(gameId)
+
+    let hex_str = numbers.toString(16).toUpperCase() // convert BigInt to hex string
+    let positions = [];
+
+    for (let i = 3; i < hex_str.length; i++) {
+      if (hex_str[i] === "F") {
+        positions.push(parseInt(i - 2)); // convert "F" to integer and add to array
+
+      }
+    }
+
+    console.log(gameId, positions, numbers)
+    setResult(positions)
+
+  } catch (error) {
+    // Handle errors
+    console.error(error)
+    return 0
+  }
+}
+
+
+const getAvailableGames = async (lotteryContract, setAvailableGames) => {
+  try {
+    let games = await lotteryContract.getAllGames()
+
+    let positions = [];
+
+    for (let i = 0; i < games.length; i++) {
+      positions.push(i + 1)
+    }
+    console.log(positions)
+    await setAvailableGames(positions)
+
+
+  } catch (error) {
+    // Handle errors
+    console.error(error)
+    return 0
+  }
+}
+
+const getGameDrawDate = async (lotteryContract, gameId, setCurrentGameDrawDate) => {
+  try {
+    let drawDate = await lotteryContract.drawDate(gameId)
+    console.log(drawDate)
+    await setCurrentGameDrawDate(drawDate.toString(10))
+
+  } catch (error) {
+    // Handle errors
+    console.error(error)
+    return 0
+  }
+}
+
+const getPlayerNumbers = async (lotteryContract, _gameId, _setticketNumber, _setGamePlayed) => {
+  try {
+    let _player = await window.ethereum.request({method: 'eth_requestAccounts'})
+    console.log(_player)
+
+    let numbers = await lotteryContract.playerNumbers(_player[0], _gameId)
+
+
+    console.log(_gameId, numbers, _player[0])
+
+    let hex_str = numbers.toString(16).toUpperCase() // convert BigInt to hex string
+    let positions = [];
+
+    for (let i = 3; i < hex_str.length; i++) {
+      if (hex_str[i] === "F") {
+        positions.push(parseInt(i - 2)); // convert "F" to integer and add to array
+
+      }
+    }
+
+    if (positions.length !== 0) {
+      await _setGamePlayed(true)
+
+    } else _setGamePlayed(false)
+
+    await _setticketNumber(positions)
+
+  } catch (error) {
+    // Handle errors
+    console.error(error)
+    return 0
+  }
+}
+
+const addNewTicket = async (lotteryContract, ticketNumbers, gameId) => {
   try {
 
-    console.log(`HELLLLLLO  ${ethers.toBeArray(ticketNumbers)}`)
-
     let ticket = ethers.toBeArray(ticketNumbers)
-    console.log(ticket, ticketNumbers)
 
-    
 
-    let addedTicket = await pairContract.addPlayerTickets(
+    let addedTicket = await lotteryContract.addPlayerTickets(
       ticket,
       gameId
     )
 
-    console.log(pairContract, ticketNumbers, gameId)
+    // Begin listening for any Transfer event
+    lotteryContract.on("NewTicketAdded", (player, ticket, gameId, event) => {
+      console.log('EVENTS!!!')
+      // The `event.log` has the entire EventLog
+      console.log(player, ticket, gameId, event)
 
-    const receipt = await addedTicket.wait()
-    const createdEvent = receipt.events?.filter(x => {
-      return x.event == 'NewTicketAdded'
-    })
-    let ce = createdEvent[0].args
-    console.log(
-      `New Ticket Created By: ${ce.player}\Numbers: ${ce.numbers}\Game Id: ${ce.gameId}`
-    )
+    });
+
+    // const receipt = await addedTicket.wait()
+
+    // console.log(receipt)
+
+    // // console.log(receipt.events[0].value.inputs[0])
+
+    // const receipt = await addedTicket.wait()
+    // const createdEvent = receipt.events?.filter(x => {
+    //   return x.event == 'NewTicketAdded'
+    // })
+
+
+    // let ce = createdEvent
+    // console.log(ce)
+    // console.log(
+    //   `New Ticket Created By: ${ce.player}\Numbers: ${ce.numbers}\Game Id: ${ce.gameId}`
+    // )
+
+
   } catch (error) {
     // Handle errors
     console.error(error)
@@ -66,18 +171,21 @@ const ContractObject = async (address) => {
     var abi = lotteryAbi()
 
     // // The Contract object
-    const Contract = new ethers.Contract(
+    const contract = new ethers.Contract(
       address,
       abi,
       signer
     )
-    return Contract
+
+    return contract
 
   } catch (error) {
     // Handle errors
     // console.error(error)
     return 0
   }
+
+
 }
 
-export  {ContractObject, addNewTicket}
+export { ContractObject, addNewTicket, getAvailableGames, getPlayerNumbers, getGameResult, getGameDrawDate }

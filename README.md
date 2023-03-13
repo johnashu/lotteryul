@@ -22,4 +22,3 @@ A lottery dApp using Bitmasking and Binary Flags to store and assess tickets.
 On PowerShell:
 
 `$env:NODE_OPTIONS = "--openssl-legacy-provider"`
-
