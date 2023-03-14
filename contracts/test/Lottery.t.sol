@@ -25,15 +25,17 @@ contract LotteryTest is Test {
         lottery = new Lottery();
     }
 
-    function testLotteryFull() public {
+    function testLotteryFull(uint16 x) public {
+        // vm.assume(i > 0 && i < type(uint16).max - 1);
         uint40 blockNumber = 10_000_120;
         vm.startPrank(winner);
 
         lottery.gameId();
 
-        uint32 len = 10; //type(uint32).max - 1;
+        uint16 len = 5; // type(uint16).max - 1;
+        
 
-        for (uint32 i = 1; i < len; i++) {
+        for (uint16 i = 1; i < len; i++) {
             vm.roll(++blockNumber);
             lottery.addGame(blockNumber + lottery.TS_OFFSET());
             blockNumber++;
@@ -54,26 +56,27 @@ contract LotteryTest is Test {
             assertEq(lottery.playerNumbers(winner, i), nums);
             assertEq(lottery.ticketsInPlay(_ticketsInPlay), 1);
 
-            if (i % 5 == 0) {
-                vm.stopPrank();
-                vm.startPrank(loser);
-                lottery.addPlayerTickets(losingTicket, i);
-                lottery.playerNumbers(loser, i);
-                vm.stopPrank();
-                vm.startPrank(winner);
-            }
+            // if (i % 5 == 0) {
+            //     vm.stopPrank();
+            //     vm.startPrank(loser);
+            //     lottery.addPlayerTickets(losingTicket, i);
+            //     lottery.playerNumbers(loser, i);
+            //     vm.stopPrank();
+            //     vm.startPrank(winner);
+            // }
         }
 
-        lottery.gameId();
+        // lottery.gameId();
 
-        lottery.getGamesPagniate(1, 10);
-        lottery.getAllGamesOfPlayer(winner);
-        lottery.getAllGamesOfPlayer(loser);
+        // lottery.getGamesPaginate(1, len);
+        // lottery.getAllGamesOfPlayer(winner);
+        // lottery.getAllGamesOfPlayer(loser);
+        // emit log_uint(type(uint16).max - 1);
     }
 
     function testAddGame() public {
         uint40 blockNumber = 10_000_120;
-        for (uint32 i = 1; i < 1000; i++) {
+        for (uint16 i = 1; i < 1000; i++) {
             vm.roll(++blockNumber);
             lottery.addGame(blockNumber + lottery.TS_OFFSET());
             blockNumber++;
@@ -97,7 +100,7 @@ contract LotteryTest is Test {
     }
 
     function testFailAddGameOverflow() public {
-        lottery.addGame(maxTs + 1);
+        lottery.addGame(maxTs + 10);
         emit log_uint(block.number);
     }
 

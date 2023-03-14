@@ -32,9 +32,9 @@ function lotteryAbi() {
         },
         {
           "indexed": true,
-          "internalType": "uint32",
+          "internalType": "uint16",
           "name": "gameId",
-          "type": "uint32"
+          "type": "uint16"
         }
       ],
       "name": "NewTicketAdded",
@@ -74,9 +74,9 @@ function lotteryAbi() {
           "type": "bytes32"
         },
         {
-          "internalType": "uint32",
+          "internalType": "uint16",
           "name": "_gameId",
-          "type": "uint32"
+          "type": "uint16"
         }
       ],
       "name": "addPlayerTickets",
@@ -87,9 +87,9 @@ function lotteryAbi() {
     {
       "inputs": [
         {
-          "internalType": "uint32",
+          "internalType": "uint16",
           "name": "_gameId",
-          "type": "uint32"
+          "type": "uint16"
         }
       ],
       "name": "addwinningTicket",
@@ -105,9 +105,9 @@ function lotteryAbi() {
           "type": "address"
         },
         {
-          "internalType": "uint32",
+          "internalType": "uint16",
           "name": "_gameId",
-          "type": "uint32"
+          "type": "uint16"
         }
       ],
       "name": "checkWinner",
@@ -124,9 +124,9 @@ function lotteryAbi() {
     {
       "inputs": [
         {
-          "internalType": "uint32",
+          "internalType": "uint16",
           "name": "_gameId",
-          "type": "uint32"
+          "type": "uint16"
         }
       ],
       "name": "drawDate",
@@ -143,9 +143,9 @@ function lotteryAbi() {
     {
       "inputs": [
         {
-          "internalType": "uint32",
+          "internalType": "uint16",
           "name": "_gameId",
-          "type": "uint32"
+          "type": "uint16"
         }
       ],
       "name": "drawResultFull",
@@ -162,9 +162,9 @@ function lotteryAbi() {
     {
       "inputs": [
         {
-          "internalType": "uint32",
+          "internalType": "uint16",
           "name": "_gameId",
-          "type": "uint32"
+          "type": "uint16"
         }
       ],
       "name": "drawResultNumbers",
@@ -226,17 +226,17 @@ function lotteryAbi() {
     {
       "inputs": [
         {
-          "internalType": "uint32",
+          "internalType": "uint16",
           "name": "start",
-          "type": "uint32"
+          "type": "uint16"
         },
         {
-          "internalType": "uint32",
+          "internalType": "uint16",
           "name": "end",
-          "type": "uint32"
+          "type": "uint16"
         }
       ],
-      "name": "getGamesPagniate",
+      "name": "getGamesPaginate",
       "outputs": [
         {
           "internalType": "bytes32[]",
@@ -255,9 +255,9 @@ function lotteryAbi() {
           "type": "address"
         },
         {
-          "internalType": "uint32",
+          "internalType": "uint16",
           "name": "_gameId",
-          "type": "uint32"
+          "type": "uint16"
         }
       ],
       "name": "playerNumbers",

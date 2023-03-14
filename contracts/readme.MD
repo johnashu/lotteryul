@@ -15,17 +15,17 @@ Deployed to: 0xeD54542F6CEbfaE00549541fB05E9a8adb388372
 Transaction hash: 0x016b60074244adfa2163c227ac5e70a2d3a446380264756732ede7ec65d05e99
 
 
-cast call 0xeD54542F6CEbfaE00549541fB05E9a8adb388372 "playerNumbers(address,uint32)" 0x63C32D60ae0687A379DbD0Eb5192E84Ba3C7886d 1 --rpc-url https://api.harmony.one
+cast call 0xeD54542F6CEbfaE00549541fB05E9a8adb388372 "playerNumbers(address,uint16)" 0x63C32D60ae0687A379DbD0Eb5192E84Ba3C7886d 1 --rpc-url https://api.harmony.one
 
-cast call 0xeD54542F6CEbfaE00549541fB05E9a8adb388372 "drawResultNumbers(uint32)" 1 --rpc-url https://api.harmony.one
+cast call 0xeD54542F6CEbfaE00549541fB05E9a8adb388372 "drawResultNumbers(uint16)" 1 --rpc-url https://api.harmony.one
 
 cast call 0xeD54542F6CEbfaE00549541fB05E9a8adb388372 "getAllGames()"  --rpc-url https://api.harmony.one
 
 cast call 0xeD54542F6CEbfaE00549541fB05E9a8adb388372 "gameId()" 
 
-cast call 0xeD54542F6CEbfaE00549541fB05E9a8adb388372 "drawResultFull(uint32)"  1
+cast call 0xeD54542F6CEbfaE00549541fB05E9a8adb388372 "drawResultFull(uint16)"  1
 
-cast call  0xeD54542F6CEbfaE00549541fB05E9a8adb388372 "drawDate(uint32)"  1 
+cast call  0xeD54542F6CEbfaE00549541fB05E9a8adb388372 "drawDate(uint16)"  1 
 
 cast call 0xeD54542F6CEbfaE00549541fB05E9a8adb388372 "addGame(uint40)"  39061700 --rpc-url https://api.harmony.one --legacy  --private-key  {PRIVATE_KEY} 
 

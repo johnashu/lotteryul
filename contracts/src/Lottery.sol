@@ -21,48 +21,86 @@ contract Lottery {
     // Log the numbers of a player for a game at id x
     // Players can only have 1 ticket per game.
     // Games are tracked and linked for searching.
-    //  map
+    // <address><gameID> == 0x0 is reserved for search assistance and storing metadata.
+    // In this game, 0 will store totalGames and a pointer to the last game id, this will help save gas on searches.
+    // Search iteration will work in reverse with the lastGame id being the upper bound of the iteration.
+
+    //  playerKey bitmap
     //  0-39 = player Address (160 bits) 0x9f
-    //  40-47 = ???
-    //  48-51 = Prev Id of this User (game Id = 0x0)
-    //  52-55 = Next Id of this user (game Id = 0x0)
-    //  56-59 = Total number of games (gameId = 0x0)  (0xFFFF)
-    //  60-63 = id game id 1-65535 (0xFFFF)
+    //  40-59 = 0s
+    //  60-63 = 16bit game id  1-65535 (0xFFFF)
+
+    //  0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2 | 00000000000000000000 | f4f3
+
+    //  ticket bitmap 0x0 reserved storing a pointer to the last ticket
+    //  and possibly other metadata
+    //  0-56  = ??? - possible other metadata stored here
+    //  57-59 = last game Id pointer - location of our next pointer. (0xFFFF)
+    //  60-63 = totalGames of this address.
+
+    // 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2 | 00000000000000000000 | 0x0 => 0x00000000000000000000000000000000000000000000000000000000 | f405 | 0007
+
+    //  ticket bitmap 1+
+    //  0 = Stop bits (base) - beginning of every word
+    //  1-49 = Winning Numbers
+    //  50-53 = 0s
+    //  54-56  = 0s
+    //  57-59  = 0s
+    //  60-63 = prevId of this user (0xFFFF)
+
+    // 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2 | 00000000000000000000 | 0x6 => 0xf | f00f0f00000000000000000000000000f0000000000f0000f | 0000 | 0000 | 0000 | 0007
+
     mapping(bytes32 playerKey => bytes32 ticket) private playerTickets;
 
     // Slot 0x1
     // Store an encoded bytes at id x
-    //  map
+
+    //  gameData map
     //  0 = Stop bits (base) - beginning of every word
     //  1-49 = Winning Numbers
-    //  50-60 = timestamp up to 1099511627775 which is > year 3999 :P
+    //  50-60 = timestamp / blockNumber space. up to 1_099_511_627_775 which is > year 3999 in unix ts or 50 years at 2sec per block.number  :P
     //  61-64 = number of winners
 
-    // 0xf | f00f0f00000000000000000000000000f0000000000f0000f | 006408f4f | f8401
-    mapping(uint256 gameId => bytes32 gameData) private games;
+    // 0x1 => 0xf | f00f0f00000000000000000000000000f0000000000f0000f | 006408f4f | f8401
+    mapping(uint16 gameId => bytes32 gameData) private games;
 
     // Slot 0x2
     // How many users have played with a ticket.  We can use this to check if there are any winners.
     // Depending on the outcome by querying this map with the winning numbers word.
+
+    //  numberOfTickets bitmap
+    //  0 = Stop bits (base) - beginning of every word
+    //  1-49 = Winning Numbers
+    //  50-53 = 0s
+    //  54-56  = 0s
+    //  57-59  = 0s
+    //  60-63 = totalTickets in play.
+
+    //  0xf | f00f0f00000000000000000000000000f0000000000f0000f | 0000 | 0000 | 0000 | 0007 => 0x5
     mapping(bytes32 ticket => uint256 numberOfTickets) public ticketsInPlay;
 
     // Number of Games - Slot 0x3
-    uint256 public gameId = 0x1; // initialise
+    uint16 public gameId = 0x1; // no zero used.
 
     // min blocks before a draw can be set. - Slot 0x4
     uint40 public constant TS_OFFSET = 0x1;
 
+    // Errors
     error DrawCanOnlyBeInTheFuture();
     error DrawDateHasNotPassed();
     error StartOrEndValueIncorrect();
+    error ZeroValuePassed();
 
-    event NewTicketAdded(address indexed player, bytes32 numbers, uint32 indexed gameId);
+    // Events
+    event NewTicketAdded(address indexed player, bytes32 numbers, uint16 indexed gameId);
+    event NewGameAdded(uint16 indexed gameId, uint40 indexed dateOfDraw);
+    event GameHasBeenDrawn(uint16 indexed gameId, bytes32 numbers);
 
     function getAllGames() public view returns (bytes32[] memory) {
         bytes32[] memory allGames = new bytes32[](gameId);
         unchecked {
-            uint32 counter;
-            for (uint256 i = 1; i < gameId+1; i++) {
+            uint16 counter;
+            for (uint16 i = 1; i < gameId + 1; i++) {
                 allGames[counter] = games[i];
                 ++counter;
             }
@@ -70,12 +108,12 @@ contract Lottery {
         return allGames;
     }
 
-    function getGamesPagniate(uint32 start, uint32 end) public view returns (bytes32[] memory) {
+    function getGamesPaginate(uint16 start, uint16 end) public view returns (bytes32[] memory) {
         if (end > gameId || start == 0) revert StartOrEndValueIncorrect();
         bytes32[] memory allGames = new bytes32[](end-start);
         unchecked {
-            uint32 counter;
-            for (uint256 i = start; i < end; i++) {
+            uint16 counter;
+            for (uint16 i = start; i < end; i++) {
                 allGames[counter] = games[i];
                 ++counter;
             }
@@ -88,8 +126,8 @@ contract Lottery {
         uint256 LIMIT = 10;
         bytes32[] memory allPlayerGames = new bytes32[](LIMIT);
         unchecked {
-            uint32 counter;
-            for (uint32 i; i < gameId; i++) {
+            uint16 counter;
+            for (uint16 i; i < gameId; i++) {
                 bytes32 _playerNumbers = playerNumbers(_player, i);
                 if (counter >= LIMIT) break;
                 if (_playerNumbers != 0x0) {
@@ -104,26 +142,16 @@ contract Lottery {
         return allPlayerGames;
     }
 
-    function playerNumbers(address _player, uint32 _gameId) public view returns (bytes32 numbers) {
+    function playerNumbers(address _player, uint16 _gameId) public view returns (bytes32 numbers) {
         assembly {
-            // shift address and add the game id to player 'key'
-            let shifted := shl(0x60, _player)
-            let state := xor(shifted, _gameId)
-
-            // Store player in memory scratch space.
-            mstore(0x0, state)
-            // Store slot number in scratch space after player.
-            mstore(0x20, playerTickets.slot)
-            // Create hash from player and slot
-            let hash := keccak256(0x0, 0x40)
+            let playerTicketHash := keccak256(xor(shl(0x60, _player), _gameId), playerTickets.slot)
 
             // load and return the players ticket numbers.
-            numbers :=
-                and(sload(keccak256(0x0, 0x40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000)
+            numbers := and(sload(playerTicketHash), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000)
         }
     }
 
-    function drawResultNumbers(uint32 _gameId) public view returns (bytes32 result) {
+    function drawResultNumbers(uint16 _gameId) public view returns (bytes32 result) {
         assembly {
             // Store gameId in memory scratch space.
             mstore(0x0, _gameId)
@@ -135,7 +163,7 @@ contract Lottery {
         }
     }
 
-    function drawDate(uint32 _gameId) public view returns (uint64 result) {
+    function drawDate(uint16 _gameId) public view returns (uint64 result) {
         assembly {
             // Store gameId in memory scratch space.
             mstore(0x0, _gameId)
@@ -149,7 +177,7 @@ contract Lottery {
         }
     }
 
-    function drawResultFull(uint32 _gameId) public view returns (bytes32 result) {
+    function drawResultFull(uint16 _gameId) public view returns (bytes32 result) {
         assembly {
             // Store gameId in memory scratch space.
             mstore(0x0, _gameId)
@@ -180,6 +208,12 @@ contract Lottery {
             // Store new state for the game.
             sstore(keccak256(0x0, 0x40), state)
         }
+
+        emit NewGameAdded(gameId, drawDate);
+    }
+
+    function _getRandomNumber() private returns (uint256 randomNumber) {
+        randomNumber = 73333815688330388439497394924671604269744030172485877353949151816386893917160;
     }
 
     /// @dev PlaceHolder to create a bitmask of numbers to bytes32 word.
@@ -187,12 +221,14 @@ contract Lottery {
     /// Checks each position 1-49 to ensure that 6 unique positions exist.
     /// Here is where we do the check for '6 numbers'.  It means we only execute it 1 time.
     /// Because we are creating a bitmask, any winning tickets have to match EXACTLY with the positions on the mask.
-    function addwinningTicket(uint32 _gameId) public {
+    function addwinningTicket(uint16 _gameId) public {
         //                                   Plus 1 incase a 0 value is passed.
         if (block.number <= (drawDate(_gameId) + 1)) _revert(DrawDateHasNotPassed.selector);
 
         // Mock value but should be a 32 byte VRF from a trusted source on chain or oracle.
-        uint256 randomNumber = 73333815688330388439497394924671604269744030172485877353949151816386893917160;
+        uint256 randomNumber = _getRandomNumber();
+
+        bytes32 updatedTicket;
 
         assembly {
             // Random number selector mask.
@@ -244,52 +280,57 @@ contract Lottery {
             // Create hash from gameId and slot
             let gameHash := keccak256(0x0, 0x40)
 
-            let updatedTicket := xor(sload(gameHash), state)
+            updatedTicket := xor(sload(gameHash), state)
 
             // save state to storage.
             sstore(gameHash, updatedTicket)
 
             // 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000000
         }
+
+        emit GameHasBeenDrawn(_gameId, updatedTicket);
     }
 
     /// @dev adds a bytes string of number locations 1-49.. .
     /// We dont check the numbers here, we want 6 and indeed, more than 6 can be passed.
-    /// but only an Exact match of the numbers will return true using the drawResult Mask.
+    /// but only an Exact match of the numbers will return true using the drawResult Mask so we leave the responsibility to the fe to enforce this.
     /// @param ticketBytes bytes with selected number position as 'F'
     /// Example - 0xFF00F0F00000000000000000000000000F0000000000F000000000000000000F
-    // 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
-    // 0x10000000000000000000000000000000000000000
-    function addPlayerTickets(bytes32 ticketBytes, uint32 _gameId) public {
-        // 45162 / 8162 GAS - Normal Solidity..
+    function addPlayerTickets(bytes32 ticketBytes, uint16 _gameId) public returns (bytes32 res) {
+        if (_gameId == 0x0) _revert(ZeroValuePassed.selector);
 
-        // Very small gas advantage here using assembly..
-        // Only saving ~200
-
-        // 44986 / 7986 GAS.
-        // Hash Key (player) and slot (0)
         assembly {
-            // shift address and add the game id to player 'key'
-            // Store player in memory scratch space.
-            mstore(0x0, xor(shl(0x60, caller()), _gameId))
-            // Store slot number in scratch space after player.
-            mstore(0x20, playerTickets.slot)
+            let ptr := mload(0x40)
+
+            let zeroHash := keccak256(xor(shl(0x60, caller()), 0x0), playerTickets.slot)
+
+            let address_id0 := sload(zeroHash)
+
+            // get pointer, this will be stored as the players 'PrevId'
+            // TODO: make this work :P
+            let idPointer :=
+                shr(0x10, and(address_id0, 0x00000000000000000000000000000000000000000000000000000000FFFF0000))
+
+            //  inc gameIds amount and update the pointer with the game id.
+            sstore(zeroHash, xor(shl(0x10, _gameId), add(address_id0, 1)))
+
             // Create hash from player and slot
-            let hash := keccak256(0x0, 0x40)
+            let playerTicketHash := keccak256(xor(shl(0x60, caller()), _gameId), playerTickets.slot)
+
+            res := or(idPointer, ticketBytes) // xor(shl(0x60, caller()), _gameId) //xor(ticketBytes, idPointer)
 
             // Store new ticket for the player.
-            sstore(hash, ticketBytes)
+            sstore(playerTicketHash, or(idPointer, ticketBytes))
 
-            // Store player in memory scratch space.
+            // Store Tickets in Play (stats per GameId about the ticket)
             mstore(0x0, xor(ticketBytes, _gameId))
-
-            // Store slot number in scratch space after id.
             mstore(0x20, ticketsInPlay.slot)
-            // Create hash from gameId and slot
+
             let ticketHash := keccak256(0x0, 0x40)
 
             let newAmount := add(sload(ticketHash), 1)
-            // Store new ticket for the player.
+
+            // Store new ticketsInPlay for the game.
             sstore(ticketHash, newAmount)
         }
 
@@ -299,19 +340,11 @@ contract Lottery {
     /// @notice checks a ticket against the winning numbers
     /// @dev uses 'and' to compare the players bytes to the winning numbers bytes.
     ///      reverts on 0 state.
-    /// @param player account to check the ticket for.
+    /// @param _player account to check the ticket for.
     /// @return result of the player if they have won or not.
-    function checkWinner(address player, uint32 _gameId) public view returns (bool result) {
+    function checkWinner(address _player, uint16 _gameId) public view returns (bool result) {
         assembly {
-            // shift address and add the game id to player 'key'
-            let shifted := shl(0x60, player)
-            let playerKey := xor(shifted, _gameId)
-            // Store player in memory scratch space.
-            mstore(0x0, playerKey)
-            // Store slot number in scratch space after player.
-            mstore(0x20, playerTickets.slot)
-            // Create hash from player and slot
-            let playerTicketHash := keccak256(0x0, 0x40)
+            let playerTicketHash := keccak256(xor(shl(0x60, _player), _gameId), playerTickets.slot)
 
             // // Create hash from player and slot - load player ticket
             let playerTicketState :=
@@ -323,23 +356,17 @@ contract Lottery {
             // // if the state is zero then anded will ALWAYS be true.
             if eq(playerTicketState, 0) { revert(0, 0) }
 
-            // Store gameId in memory scratch space.
-            mstore(0x0, _gameId)
-            // Store slot number in scratch space after id.
-            mstore(0x20, games.slot)
-            // Create hash from gameId and slot
-            let gameHash := keccak256(0x0, 0x40)
-
             // // Use 'and' to check the state against the winning numbers.
             // // any matching bits will create a new 32 byte word with only matching
             // // positions (or 0 if there are no matches).
             let anded :=
                 and(
-                    and(sload(gameHash), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000),
+                    and(
+                        sload(keccak256(_gameId, games.slot)),
+                        0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000
+                    ),
                     playerTicketState
                 )
-
-            // result := anded
 
             // // Compare anded to our players numbers state.
             // // If they are an exact match, the result will be true and thus a winner.
