@@ -35,8 +35,8 @@ contract Lottery {
     //  ticket bitmap 0x0 reserved storing a pointer to the last ticket
     //  and possibly other metadata
     //  0-56  = ??? - possible other metadata stored here
-    //  57-59 = last game Id pointer - location of our next pointer. (0xFFFF)
-    //  60-63 = totalGames of this address.
+    //  57-59 = ??? last game Id pointer - location of our next pointer. (0xFFFF)
+    //  60-63 = ??? totalGames of this address.
 
     // 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2 | 00000000000000000000 | 0x0 => 0x00000000000000000000000000000000000000000000000000000000 | f405 | 0007
 
@@ -46,7 +46,7 @@ contract Lottery {
     //  50-53 = 0s
     //  54-56  = 0s
     //  57-59  = 0s
-    //  60-63 = prevId of this user (0xFFFF)
+    //  60-63 = ??? prevId of this user (0xFFFF)
 
     // 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2 | 00000000000000000000 | 0x6 => 0xf | f00f0f00000000000000000000000000f0000000000f0000f | 0000 | 0000 | 0000 | 0007
 
@@ -71,12 +71,9 @@ contract Lottery {
     //  numberOfTickets bitmap
     //  0 = Stop bits (base) - beginning of every word
     //  1-49 = Winning Numbers
-    //  50-53 = 0s
-    //  54-56  = 0s
-    //  57-59  = 0s
-    //  60-63 = totalTickets in play.
+    //  50-63 = 0s
 
-    //  0xf | f00f0f00000000000000000000000000f0000000000f0000f | 0000 | 0000 | 0000 | 0007 => 0x5
+    //  0xf | f00f0f00000000000000000000000000f0000000000f0000f | 0000000000000000 => 0x5
     mapping(bytes32 ticket => uint256 numberOfTickets) public ticketsInPlay;
 
     // Number of Games - Slot 0x3
@@ -95,6 +92,8 @@ contract Lottery {
     event NewTicketAdded(address indexed player, bytes32 numbers, uint16 indexed gameId);
     event NewGameAdded(uint16 indexed gameId, uint40 indexed dateOfDraw);
     event GameHasBeenDrawn(uint16 indexed gameId, bytes32 numbers);
+
+    // Getters
 
     function getAllGames() public view returns (bytes32[] memory) {
         bytes32[] memory allGames = new bytes32[](gameId);
@@ -151,6 +150,15 @@ contract Lottery {
         }
     }
 
+    // function playerMetaData(address _player) public view returns (bytes32 numbers) {
+    //     assembly {
+    //         let playerTicketHash := keccak256(xor(shl(0x60, _player), 0x0), playerTickets.slot)
+
+    //         // load and return the players ticket numbers.
+    //         numbers := and(sload(playerTicketHash), 0x00000000000000000000000000000000000000000000000000000000FFFFFFFF)
+    //     }
+    // }
+
     function drawResultNumbers(uint16 _gameId) public view returns (bytes32 result) {
         assembly {
             // Store gameId in memory scratch space.
@@ -187,6 +195,80 @@ contract Lottery {
             result := sload(keccak256(0x0, 0x40))
         }
     }
+
+    // Check winners
+
+    function checkMatchedNumbers(address _player, uint16 _gameId) public returns (uint8 totalMatched) {
+        assembly {
+            // Store gameId in memory scratch space.
+            mstore(0x0, _gameId)
+            // Store slot number in scratch space after id.
+            mstore(0x20, games.slot)
+            // Create hash from gameId and slot
+            let winningNumbers :=
+                and(sload(keccak256(0x0, 0x40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000)
+
+            let playerTicketHash := keccak256(xor(shl(0x60, _player), _gameId), playerTickets.slot)
+
+            // // Create hash from player and slot - load player ticket
+            let playerTicketState :=
+                and(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000, sload(playerTicketHash))
+
+            // TODO:
+
+            // for { let i := 1 } lt(i, 50) { i := add(i, 1) } {
+            //     let bitPos := mul(i, 4)
+            //     let shifted := shr(bitPos, 0xF000000000000000000000000000000000000000000000000000000000000000)
+            //     let playerMatched := and(playerTicketState, shifted)
+            //     let anded := and(winningNumbers, shifted)
+            //     // totalMatched := shifted
+            //     // totalMatched := winningNumbers
+            //     // totalMatched := playerMatched
+            //     // totalMatched := anded
+
+            //     if eq(anded, playerMatched) { totalMatched := add(totalMatched, 1) }
+            // }
+        }
+    }
+
+    /// @notice checks a ticket against the winning numbers
+    /// @dev uses 'and' to compare the players bytes to the winning numbers bytes.
+    ///      reverts on 0 state.
+    /// @param _player account to check the ticket for.
+    /// @return result of the player if they have won or not.
+    function checkWinner(address _player, uint16 _gameId) public view returns (bool result) {
+        assembly {
+            let playerTicketHash := keccak256(xor(shl(0x60, _player), _gameId), playerTickets.slot)
+
+            // // Create hash from player and slot - load player ticket
+            let playerTicketState :=
+                and(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000, sload(playerTicketHash))
+
+            // // check the state for 0 as we load this anyway
+            // // We dont check winning numbers as even if it is zero,
+            // // a non zero state will not return  0 when anded
+            // // if the state is zero then anded will ALWAYS be true.
+            if eq(playerTicketState, 0) { revert(0, 0) }
+
+            // // Use 'and' to check the state against the winning numbers.
+            // // any matching bits will create a new 32 byte word with only matching
+            // // positions (or 0 if there are no matches).
+            let anded :=
+                and(
+                    and(
+                        sload(keccak256(_gameId, games.slot)),
+                        0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000
+                    ),
+                    playerTicketState
+                )
+
+            // // Compare anded to our players numbers state.
+            // // If they are an exact match, the result will be true and thus a winner.
+            result := eq(anded, playerTicketState)
+        }
+    }
+
+    // Add & Update Games
 
     function addGame(uint40 drawDate) public {
         if (drawDate < block.number + TS_OFFSET) _revert(DrawCanOnlyBeInTheFuture.selector);
@@ -235,7 +317,7 @@ contract Lottery {
             let randomMask := 0x00000000000000000000000000000000000000000000000000000000000000FF
 
             // Load current state, starting the same as `_base` 0xF000...0000
-            let state
+            let winningNumbers
             let counter
 
             // Should not reach the max 64 unless we have a random number
@@ -257,13 +339,13 @@ contract Lottery {
                 // The first will be our stop bit 'F' at position '0'
                 let shifted := shr(mul(pos, 4), 0xF000000000000000000000000000000000000000000000000000000000000000)
 
-                // XOR to create a new state with the new position added.
-                let xored := xor(state, shifted)
+                // XOR to create a new winningNumbers with the new position added.
+                let xored := xor(winningNumbers, shifted)
 
-                // check if unique. If xored == state it means we have a duplicate
-                if not(and(xored, state)) {
-                    // Use OR to add our shifted digit to the state
-                    state := xored
+                // check if unique. If xored == winningNumbers it means we have a duplicate
+                if not(and(xored, winningNumbers)) {
+                    // Use OR to add our shifted digit to the winningNumbers
+                    winningNumbers := xored
 
                     // increment counter by 1
                     counter := add(counter, 1)
@@ -280,9 +362,9 @@ contract Lottery {
             // Create hash from gameId and slot
             let gameHash := keccak256(0x0, 0x40)
 
-            updatedTicket := xor(sload(gameHash), state)
+            updatedTicket := xor(sload(gameHash), winningNumbers)
 
-            // save state to storage.
+            // save winningNumbers to storage.
             sstore(gameHash, updatedTicket)
 
             // 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000000
@@ -296,31 +378,13 @@ contract Lottery {
     /// but only an Exact match of the numbers will return true using the drawResult Mask so we leave the responsibility to the fe to enforce this.
     /// @param ticketBytes bytes with selected number position as 'F'
     /// Example - 0xFF00F0F00000000000000000000000000F0000000000F000000000000000000F
-    function addPlayerTickets(bytes32 ticketBytes, uint16 _gameId) public returns (bytes32 res) {
+    function addPlayerTickets(bytes32 ticketBytes, uint16 _gameId) public {
         if (_gameId == 0x0) _revert(ZeroValuePassed.selector);
 
         assembly {
-            let ptr := mload(0x40)
-
-            let zeroHash := keccak256(xor(shl(0x60, caller()), 0x0), playerTickets.slot)
-
-            let address_id0 := sload(zeroHash)
-
-            // get pointer, this will be stored as the players 'PrevId'
-            // TODO: make this work :P
-            let idPointer :=
-                shr(0x10, and(address_id0, 0x00000000000000000000000000000000000000000000000000000000FFFF0000))
-
-            //  inc gameIds amount and update the pointer with the game id.
-            sstore(zeroHash, xor(shl(0x10, _gameId), add(address_id0, 1)))
-
             // Create hash from player and slot
-            let playerTicketHash := keccak256(xor(shl(0x60, caller()), _gameId), playerTickets.slot)
-
-            res := or(idPointer, ticketBytes) // xor(shl(0x60, caller()), _gameId) //xor(ticketBytes, idPointer)
-
             // Store new ticket for the player.
-            sstore(playerTicketHash, or(idPointer, ticketBytes))
+            sstore(keccak256(xor(shl(0x60, caller()), _gameId), playerTickets.slot), ticketBytes)
 
             // Store Tickets in Play (stats per GameId about the ticket)
             mstore(0x0, xor(ticketBytes, _gameId))
@@ -328,50 +392,11 @@ contract Lottery {
 
             let ticketHash := keccak256(0x0, 0x40)
 
-            let newAmount := add(sload(ticketHash), 1)
-
             // Store new ticketsInPlay for the game.
-            sstore(ticketHash, newAmount)
+            sstore(ticketHash, add(sload(ticketHash), 1))
         }
 
         emit NewTicketAdded(msg.sender, ticketBytes, _gameId);
-    }
-
-    /// @notice checks a ticket against the winning numbers
-    /// @dev uses 'and' to compare the players bytes to the winning numbers bytes.
-    ///      reverts on 0 state.
-    /// @param _player account to check the ticket for.
-    /// @return result of the player if they have won or not.
-    function checkWinner(address _player, uint16 _gameId) public view returns (bool result) {
-        assembly {
-            let playerTicketHash := keccak256(xor(shl(0x60, _player), _gameId), playerTickets.slot)
-
-            // // Create hash from player and slot - load player ticket
-            let playerTicketState :=
-                and(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000, sload(playerTicketHash))
-
-            // // check the state for 0 as we load this anyway
-            // // We dont check winning numbers as even if it is zero,
-            // // a non zero state will not return  0 when anded
-            // // if the state is zero then anded will ALWAYS be true.
-            if eq(playerTicketState, 0) { revert(0, 0) }
-
-            // // Use 'and' to check the state against the winning numbers.
-            // // any matching bits will create a new 32 byte word with only matching
-            // // positions (or 0 if there are no matches).
-            let anded :=
-                and(
-                    and(
-                        sload(keccak256(_gameId, games.slot)),
-                        0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000
-                    ),
-                    playerTicketState
-                )
-
-            // // Compare anded to our players numbers state.
-            // // If they are an exact match, the result will be true and thus a winner.
-            result := eq(anded, playerTicketState)
-        }
     }
 
     /**

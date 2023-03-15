@@ -4,16 +4,19 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "../src/lottery.sol";
 
+    // bytes32 winnerHash = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2000000000000000000000001;
+    // bytes32 loserHash =  0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2000000000000000000000001;
+
 contract LotteryTest is Test {
     Lottery public lottery;
     address loser = makeAddr("LoserUser");
     address winner = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2; // makeAddr("winnerUser");
-    bytes32 winnerHash = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2000000000000000000000001;
-    bytes32 loserHash = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2000000000000000000000001;
-    bytes32 losingTicket = 0xf0000000fff000000ff000000000000000000000000000000f00000000000000;
-    bytes32 drawResult = 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000000;
+    bytes32 losingTicket = 0xf0000000fff000000ff00000f000000000000000000000000000000000000000;
+    bytes32 drawResult =   0xf00ff0000ff00000000000000000000f000000000000f0000000000000000000;
     bytes32 allOn = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
     bytes32 allOff = 0x0;
+
+    // bytes32 winnerZeroIndex = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb200000000000000000000;
 
     bytes32 _ticketsInPlay = 0xf00ff0000ff00000000000000000000f000000000000f0000000000000000001;
 
@@ -32,8 +35,7 @@ contract LotteryTest is Test {
 
         lottery.gameId();
 
-        uint16 len = 5; // type(uint16).max - 1;
-        
+        uint16 len = 2; // type(uint16).max - 1;
 
         for (uint16 i = 1; i < len; i++) {
             vm.roll(++blockNumber);
@@ -44,6 +46,7 @@ contract LotteryTest is Test {
 
             lottery.addPlayerTickets(drawResult, i);
             lottery.playerNumbers(winner, i);
+            // lottery.playerMetaData(winner);
 
             emit log_uint(lottery.drawDate(i));
             emit log_uint(block.number);
@@ -56,22 +59,25 @@ contract LotteryTest is Test {
             assertEq(lottery.playerNumbers(winner, i), nums);
             assertEq(lottery.ticketsInPlay(_ticketsInPlay), 1);
 
-            // if (i % 5 == 0) {
-            //     vm.stopPrank();
-            //     vm.startPrank(loser);
-            //     lottery.addPlayerTickets(losingTicket, i);
-            //     lottery.playerNumbers(loser, i);
-            //     vm.stopPrank();
-            //     vm.startPrank(winner);
-            // }
+            if (i % 5 == 0) {
+                vm.stopPrank();
+                vm.startPrank(loser);
+                lottery.addPlayerTickets(losingTicket, i);
+                lottery.playerNumbers(loser, i);
+                vm.stopPrank();
+                vm.startPrank(winner);
+            }
+            lottery.checkMatchedNumbers(winner, i);
+            lottery.checkMatchedNumbers(loser, i);
         }
 
-        // lottery.gameId();
+        lottery.gameId();
 
-        // lottery.getGamesPaginate(1, len);
-        // lottery.getAllGamesOfPlayer(winner);
-        // lottery.getAllGamesOfPlayer(loser);
-        // emit log_uint(type(uint16).max - 1);
+        lottery.getGamesPaginate(1, len);
+        lottery.getAllGamesOfPlayer(winner);
+        lottery.getAllGamesOfPlayer(loser);
+
+        emit log_uint(type(uint16).max - 1);
     }
 
     function testAddGame() public {
